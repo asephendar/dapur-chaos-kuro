@@ -136,6 +136,17 @@
         font-family:inherit; font-weight:800; font-size:12.5px; cursor:pointer;
         background:transparent; color:var(--accent); border:2px solid var(--accent); border-radius:8px; padding:5px 12px;
       }
+      #btnPauseTouch{
+        position:absolute; top:64px; right:10px; z-index:4;
+        display:none; align-items:center; justify-content:center;
+        width:48px; height:48px; border-radius:50%;
+        background:rgba(10,20,14,.92); border:2px solid var(--accent);
+        color:var(--gold); font-size:16px; font-weight:800; cursor:pointer;
+        box-shadow:0 6px 16px rgba(0,0,0,.5);
+        font-family:inherit; letter-spacing:1px; padding:0;
+      }
+      #btnPauseTouch.on{ display:flex; }
+      #btnPauseTouch:active{ filter:brightness(1.3); }
       .controls-grid{
         display:flex; gap:14px; flex-wrap:wrap; justify-content:center; margin-top:12px;
       }
@@ -226,12 +237,15 @@
         <button id="btnDisconnect" type="button">PUTUSKAN</button>
       </div>
 
+      <!-- Touch pause button -->
+      <button id="btnPauseTouch" type="button" aria-label="Jeda">&#10074;&#10074;</button>
+
       <!-- Title screen / main menu -->
       <div class="overlay" id="titleScreen">
         <div class="panel">
           <h1>DAPUR CHAOS<br/>KURO</h1>
           <p>Pesanan datang terus, dapur makin kacau! Ambil bahan &rarr; potong &amp; masak &rarr; taruh di piring &rarr; sajikan sebelum tiketnya hangus. Jangan sampai ada yang gosong!</p>
-          <button class="btn" id="btnStart" type="button">MAIN SOLO / CO-OP LOKAL</button>
+          <button class="btn" id="btnStart" type="button">MAIN SOLO</button>
           <button class="btn secondary" id="btnOnline" type="button">MULTIPLAYER ONLINE</button>
           <button class="btn secondary" id="btnHow" type="button">CARA MAIN</button>
           <div class="credit">Level 150 detik &middot; kejar 800 poin untuk 3 bintang!<br/>Dapur Chaos Kuro &mdash; dimasak dengan kode, tanpa aset jiplakan.</div>
@@ -245,19 +259,15 @@
           <p>Ambil bahan dari krat &rarr; potong sayur di talenan (tahan tombol) &rarr; masak daging di kompor (jangan sampai gosong!) &rarr; susun di piring &rarr; sajikan di Meja Saji. Piring kotor balik ke wastafel &mdash; tahan tombol untuk mencuci.</p>
           <div class="controls-grid">
             <div class="ctl-card">
-              <b class="name-raka">&#9679; RAKA</b> (rambut perak)<br/>
+              <b>KONTROL UTAMA</b> (semua mode)<br/>
               Gerak: <span class="keys">W A S D</span><br/>
               Interaksi / tahan potong &amp; cuci: <span class="keys">E</span><br/>
-              Dash: <span class="keys">Shift kiri</span>
-            </div>
-            <div class="ctl-card">
-              <b class="name-gora">&#9679; GORA</b> (rambut coklat)<br/>
-              Gerak: <span class="keys">&#8592; &#8593; &#8595; &#8594;</span><br/>
-              Interaksi / tahan potong &amp; cuci: <span class="keys">.</span> (titik)<br/>
-              Dash: <span class="keys">/</span>
+              Dash: <span class="keys">Shift</span><br/>
+              Ganti koki (solo): <span class="keys">Tab</span> / <span class="keys">C</span><br/>
+              Jeda: <span class="keys">P</span> / <span class="keys">Esc</span>
             </div>
           </div>
-          <p style="margin-top:10px;">Co-op lokal: dua koki, satu keyboard. Online: tiap pemain di perangkatnya sendiri memakai skema utama (WASD + E + Shift / sentuh). Di HP: joystick + tombol. <span class="keys" style="color:#ffd873;font-weight:700;">R</span> ulang level &middot; <span class="keys" style="color:#ffd873;font-weight:700;">P</span> jeda (lokal).</p>
+          <p style="margin-top:10px;"><b>SOLO:</b> kamu mengendalikan satu koki (bertanda KAMU); koki satunya jadi partner yang diam menunggu — tekan <span class="keys">Tab</span>/<span class="keys">C</span> untuk bertukar kendali kapan saja. <b>MULTIPLAYER ONLINE:</b> dua perangkat, host = Raka, tamu = Gora, masing-masing memakai kontrol utama; jeda berlaku bersama untuk kedua pemain. Di HP: joystick + tombol, jeda lewat tombol &#10074;&#10074; di pojok layar.</p>
           <button class="btn" id="btnHowBack" type="button">KEMBALI</button>
         </div>
       </div>
@@ -301,10 +311,13 @@
       <!-- Pause -->
       <div class="overlay solid hidden" id="pauseScreen">
         <div class="panel">
-          <h2>ISTIRAHAT DULU</h2>
-          <p>Dapur aman, kompor nggak akan gosong selama jeda. Santai.</p>
-          <button class="btn" id="btnResume" type="button">LANJUT MASAK</button>
+          <h2>JEDA</h2>
+          <p>Semua membeku — timer, tiket pesanan, dan kompor berhenti selama jeda.</p>
+          <p id="pauseByText" style="display:none; color:#ffd873; font-weight:700;"></p>
+          <button class="btn" id="btnResume" type="button">LANJUT</button>
           <button class="btn secondary" id="btnRestartFromPause" type="button">ULANG LEVEL</button>
+          <button class="btn secondary" id="btnPauseMenu" type="button">KEMBALI KE MENU</button>
+          <button class="btn secondary" id="btnPauseDisconnect" type="button" style="display:none;">PUTUSKAN</button>
         </div>
       </div>
 
@@ -339,8 +352,8 @@
         Gerak <span class="k">W</span><span class="k">A</span><span class="k">S</span><span class="k">D</span> &middot; Interaksi <span class="k">E</span> (tahan untuk memotong &amp; mencuci) &middot; Dash <span class="k">Shift</span>
       </div>
       <div class="card">
-        <h3><span class="dot" style="background:#2470c2;"></span>Gora</h3>
-        Gerak <span class="k">&#8592;</span><span class="k">&#8593;</span><span class="k">&#8595;</span><span class="k">&#8594;</span> &middot; Interaksi <span class="k">.</span> &middot; Dash <span class="k">/</span> &middot; Jeda <span class="k">P</span> &middot; Ulang <span class="k">R</span>
+        <h3><span class="dot" style="background:#2470c2;"></span>Gora (partner)</h3>
+        Di mode solo, tekan <span class="k">Tab</span> / <span class="k">C</span> untuk ganti kendali ke koki satunya — yang tidak aktif diam menunggu. Jeda <span class="k">P</span> / <span class="k">Esc</span> &middot; Ulang <span class="k">R</span>
       </div>
       <div class="card">
         <h3>Resep</h3>
@@ -431,6 +444,7 @@
     var timeLeft = LEVEL_TIME, spawnT = 0, sizzleT = 0, lastWholeSec = -1;
     var cleanPlates = 3, dirtyPlates = 0, pendingDirty = [];
     var cdT = 0; // countdown seconds remaining (online + local start)
+    var activeChef = 0; // solo: index of the chef the player controls (0=Raka, 1=Gora)
 
     /* ---------------- Multiplayer (PeerJS, host-authoritative) ---------------- */
     var MP_PREFIX = 'dapurchaos-kuro-';
@@ -504,6 +518,7 @@
       ];
       tickets = []; floaters = []; particles = []; pendingDirty = [];
       score = 0; served = 0; failed = 0;
+      activeChef = 0; pausedBy = null;
       timeLeft = LEVEL_TIME; cleanPlates = 3; dirtyPlates = 0;
       spawnT = 7; sizzleT = 0; lastWholeSec = -1;
       spawnTicket();
@@ -670,39 +685,52 @@
     var keys = {};
     var joyVec = { x: 0, y: 0 }, touchInteract = false, touchDashEdge = false;
     window.addEventListener('keydown', function(e){
-      if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Slash','Space'].indexOf(e.code) >= 0) e.preventDefault();
+      if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Slash','Space','Tab'].indexOf(e.code) >= 0) e.preventDefault();
       keys[e.code] = true;
-      if (mp.mode !== 'local') return; // online: host drives restarts, no local pause/restart
-      if (e.code === 'KeyR' && (state === 'playing' || state === 'results' || state === 'paused')){ startLevel(); }
-      if ((e.code === 'KeyP' || e.code === 'Escape')){
-        if (state === 'playing') pauseGame();
-        else if (state === 'paused') resumeGame();
+      if (e.repeat) return;
+      // Pause works in every mode (shared pause online).
+      if (e.code === 'KeyP' || e.code === 'Escape'){
+        if (state === 'playing') requestPause();
+        else if (state === 'paused') requestResume();
+        return;
       }
+      if (mp.mode !== 'local') return; // online: no chef-switch / local restart keys
+      if ((e.code === 'Tab' || e.code === 'KeyC') && state === 'playing') switchChef();
+      if (e.code === 'KeyR' && (state === 'playing' || state === 'results' || state === 'paused')){ startLevel(); }
     });
     window.addEventListener('keyup', function(e){ keys[e.code] = false; });
 
     function chefInput(c){
       var v = { x: 0, y: 0 }, interact = false, dash = false;
-      if (c.scheme === 'raka'){
-        if (keys.KeyA) v.x -= 1; if (keys.KeyD) v.x += 1;
-        if (keys.KeyW) v.y -= 1; if (keys.KeyS) v.y += 1;
-        if (Math.abs(joyVec.x) > 0.12 || Math.abs(joyVec.y) > 0.12){ v.x = joyVec.x; v.y = joyVec.y; }
-        interact = !!keys.KeyE || touchInteract;
-        dash = !!keys.ShiftLeft || !!keys.ShiftRight || touchDashEdge;
-      } else {
-        if (mp.mode === 'host'){
-          // Online host: Gora is driven by the guest's streamed input.
-          v.x = guestInput.v.x; v.y = guestInput.v.y;
-          interact = guestInput.interact;
-          dash = guestInput.dash;
-        } else {
-          if (keys.ArrowLeft) v.x -= 1; if (keys.ArrowRight) v.x += 1;
-          if (keys.ArrowUp) v.y -= 1; if (keys.ArrowDown) v.y += 1;
-          interact = !!keys.Period;
-          dash = !!keys.Slash;
-        }
+      if (mp.mode === 'guest') return { v: v, interact: interact, dash: dash }; // guests never simulate
+      if (mp.mode === 'host' && c === chefs[1]){
+        // Online host: Gora is driven by the guest's streamed input.
+        v.x = guestInput.v.x; v.y = guestInput.v.y;
+        interact = guestInput.interact;
+        dash = guestInput.dash;
+        return { v: v, interact: interact, dash: dash };
       }
+      if (mp.mode === 'local' && c !== chefs[activeChef])
+        return { v: v, interact: interact, dash: dash }; // solo partner waits idle
+      // Main scheme: the locally controlled chef (solo active chef / host's Raka).
+      if (keys.KeyA) v.x -= 1; if (keys.KeyD) v.x += 1;
+      if (keys.KeyW) v.y -= 1; if (keys.KeyS) v.y += 1;
+      if (Math.abs(joyVec.x) > 0.12 || Math.abs(joyVec.y) > 0.12){ v.x = joyVec.x; v.y = joyVec.y; }
+      interact = !!keys.KeyE || touchInteract;
+      dash = !!keys.ShiftLeft || !!keys.ShiftRight || touchDashEdge;
       return { v: v, interact: interact, dash: dash };
+    }
+    function isLocalChef(c){
+      if (mp.mode === 'host') return c === chefs[0];
+      if (mp.mode === 'guest') return c === chefs[1];
+      return c === chefs[activeChef];
+    }
+    function switchChef(){
+      if (mp.mode !== 'local' || chefs.length < 2) return;
+      var old = chefs[activeChef];
+      if (old){ old.target = null; old.interactHeld = false; }
+      activeChef = 1 - activeChef;
+      sfx('click');
     }
 
     /* ---------------- Update ---------------- */
@@ -790,15 +818,26 @@
           floaters.push({ x: 70, y: 110 + i * 78, txt: '-30 Pesanan hangus!', color: '#ff6b5e', life: 1.4 });
         }
       }
-      // chefs
-      for (var j = 0; j < chefs.length; j++) updateChef(chefs[j], dt);
+      // chefs (solo: only the active chef moves; the partner stays frozen idle)
+      for (var j = 0; j < chefs.length; j++){
+        if (mp.mode === 'local' && j !== activeChef) continue;
+        updateChef(chefs[j], dt);
+      }
       // chef-chef soft collision
       var a = chefs[0], b = chefs[1];
       var dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy), minD = a.r + b.r + 2;
       if (d > 0.01 && d < minD){
         var push = (minD - d) / 2, ux = dx / d, uy = dy / d;
-        a.x -= ux * push; a.y -= uy * push; b.x += ux * push; b.y += uy * push;
-        collideStations(a); collideStations(b);
+        if (mp.mode === 'local'){
+          // The idle partner never moves: the active chef takes the full push.
+          var actC = chefs[activeChef];
+          if (actC === a){ a.x -= ux * push * 2; a.y -= uy * push * 2; }
+          else { b.x += ux * push * 2; b.y += uy * push * 2; }
+          collideStations(actC);
+        } else {
+          a.x -= ux * push; a.y -= uy * push; b.x += ux * push; b.y += uy * push;
+          collideStations(a); collideStations(b);
+        }
       }
       // hold actions: chopping & washing
       for (var s = 0; s < stations.length; s++){
@@ -1114,6 +1153,18 @@
       rr(c.x - tw / 2, c.y - 58 + bob, tw, 15, 7.5); ctx.fill();
       ctx.fillStyle = '#fff';
       ctx.fillText(c.name, c.x, c.y - 47 + bob);
+      // "KAMU" marker + gold ring for the chef this player controls
+      if (isLocalChef(c)){
+        var pulse = 3 + Math.sin(perfNow * .006) * 1.2;
+        ctx.strokeStyle = '#ffd23e'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.ellipse(c.x, c.y + 19, 24 + pulse, 9 + pulse * .35, 0, 0, 7); ctx.stroke();
+        ctx.font = '800 10px "Baloo 2", sans-serif';
+        var kw = ctx.measureText('KAMU').width + 10;
+        ctx.fillStyle = '#ffd23e';
+        rr(c.x - kw / 2, c.y - 76 + bob, kw, 14, 7); ctx.fill();
+        ctx.fillStyle = '#221a05';
+        ctx.fillText('KAMU', c.x, c.y - 65.5 + bob);
+      }
       drawHeld(c);
     }
     function drawTickets(){
@@ -1294,6 +1345,8 @@
     function showMenu(){
       hideAllOverlays();
       state = 'title';
+      pausedBy = null;
+      activeChef = 0;
       titleEl.classList.remove('hidden');
       mpBarEl.classList.remove('on');
       updateTouchVisibility();
@@ -1319,13 +1372,52 @@
       mpBarText.textContent = mp.mode === 'host' ? 'Online · Kamu RAKA · Room ' + mp.code : 'Online · Kamu GORA · Room ' + mp.code;
       updateTouchVisibility();
     }
-    function pauseGame(){
+    var pausedBy = null; // 'local' | 'host' | 'guest' — who triggered the shared pause
+    function showPauseOverlay(){
+      var isGuest = mp.mode === 'guest';
+      var byEl = document.getElementById('pauseByText');
+      if (mp.mode === 'local'){ byEl.style.display = 'none'; }
+      else {
+        byEl.style.display = '';
+        byEl.textContent = pausedBy === 'guest' ? 'Dijeda oleh Tamu' : 'Dijeda oleh Host';
+      }
+      document.getElementById('btnResume').style.display = (isGuest && pausedBy !== 'guest') ? 'none' : '';
+      document.getElementById('btnRestartFromPause').style.display = isGuest ? 'none' : '';
+      document.getElementById('btnPauseMenu').style.display = isGuest ? 'none' : '';
+      document.getElementById('btnPauseDisconnect').style.display = isGuest ? '' : 'none';
+      pauseEl.classList.remove('hidden');
+      updateTouchVisibility();
+    }
+    function pauseGame(by){
       if (state !== 'playing') return;
-      state = 'paused'; pauseEl.classList.remove('hidden'); sfx('click');
+      pausedBy = by || 'local';
+      state = 'paused';
+      showPauseOverlay();
+      sfx('click');
     }
     function resumeGame(){
       if (state !== 'paused') return;
+      pausedBy = null;
       state = 'playing'; pauseEl.classList.add('hidden'); initAudio(); sfx('click');
+      updateTouchVisibility();
+    }
+    function requestPause(){
+      if (state !== 'playing') return;
+      if (mp.mode === 'guest'){
+        // Guest asks the host; the host's next snapshot flips both sides to paused.
+        if (mp.conn && mp.conn.open){ try { mp.conn.send({ t: 'pause' }); } catch (e) {} }
+        return;
+      }
+      pauseGame(mp.mode === 'host' ? 'host' : 'local');
+    }
+    function requestResume(){
+      if (state !== 'paused') return;
+      if (mp.mode === 'guest'){
+        // Only the player who paused (or the host) may resume.
+        if (pausedBy === 'guest' && mp.conn && mp.conn.open){ try { mp.conn.send({ t: 'resume' }); } catch (e) {} }
+        return;
+      }
+      resumeGame();
     }
     function showResults(){
       var stars = score >= 800 ? 3 : (score >= 550 ? 2 : (score >= 300 ? 1 : 0));
@@ -1366,8 +1458,14 @@
       else startLevel();
     });
     document.getElementById('btnResultMenu').addEventListener('click', function(){ mpCleanup(true); showMenu(); });
-    document.getElementById('btnResume').addEventListener('click', resumeGame);
-    document.getElementById('btnRestartFromPause').addEventListener('click', startLevel);
+    document.getElementById('btnResume').addEventListener('click', requestResume);
+    document.getElementById('btnRestartFromPause').addEventListener('click', function(){
+      if (mp.mode === 'host'){ if (mp.conn && mp.conn.open) mp.conn.send({ t: 'start' }); startOnlineGame(); }
+      else startLevel();
+    });
+    document.getElementById('btnPauseMenu').addEventListener('click', function(){ sfx('click'); if (mp.mode !== 'local') mpCleanup(true); showMenu(); });
+    document.getElementById('btnPauseDisconnect').addEventListener('click', function(){ mpCleanup(true); showMenu(); });
+    document.getElementById('btnPauseTouch').addEventListener('click', function(){ initAudio(); if (state === 'playing') requestPause(); });
     document.getElementById('btnDisconnect').addEventListener('click', function(){ mpCleanup(true); showMenu(); });
     document.getElementById('btnDcMenu').addEventListener('click', function(){ mpCleanup(true); showMenu(); });
 
@@ -1399,7 +1497,7 @@
     }
     function mpDisconnected(msg){
       if (mp.mode === 'local') return;
-      var wasInGame = state === 'playing' || state === 'countdown' || state === 'results';
+      var wasInGame = state === 'playing' || state === 'countdown' || state === 'results' || state === 'paused';
       mpCleanup(true);
       if (wasInGame){
         state = 'paused';
@@ -1428,6 +1526,8 @@
           guestInput.v.x = +data.x || 0; guestInput.v.y = +data.y || 0;
           guestInput.interact = !!data.i; guestInput.dash = !!data.d;
         }
+        else if (data.t === 'pause'){ if (state === 'playing') pauseGame('guest'); }
+        else if (data.t === 'resume'){ if (state === 'paused' && pausedBy === 'guest') resumeGame(); }
       });
       conn.on('close', function(){ mpDisconnected('Koneksi ke tamu terputus. Game dijeda.'); });
       conn.on('error', function(){ mpDisconnected('Koneksi ke tamu bermasalah. Game dijeda.'); });
@@ -1529,7 +1629,7 @@
                    holding: c.holding, wp: c.walkPhase, dashT: c.dashT > 0 ? 1 : 0 });
       }
       var ev = mp.pendingEvents; mp.pendingEvents = [];
-      return { t: 'snap', gs: state, cd: cdT, timeLeft: timeLeft, score: score,
+      return { t: 'snap', gs: state, pb: pausedBy, cd: cdT, timeLeft: timeLeft, score: score,
                served: served, failed: failed, clean: cleanPlates, dirty: dirtyPlates,
                tickets: tickets, stations: sts, chefs: cfs, ev: ev };
     }
@@ -1566,9 +1666,14 @@
       }
       if (s.ev) for (var k = 0; k < s.ev.length; k++) sfx(s.ev[k]);
       // Mirror the host's game phase.
-      if (s.gs === 'playing' && state !== 'playing'){ state = 'playing'; hideAllOverlays(); mpBarEl.classList.add('on'); updateTouchVisibility(); }
+      if (s.gs === 'playing' && state !== 'playing'){ pausedBy = null; state = 'playing'; hideAllOverlays(); mpBarEl.classList.add('on'); updateTouchVisibility(); }
       else if (s.gs === 'countdown' && state !== 'countdown'){ state = 'countdown'; hideAllOverlays(); mpBarEl.classList.add('on'); }
       else if (s.gs === 'results' && state !== 'results'){ state = 'results'; showResults(); }
+      else if (s.gs === 'paused'){
+        pausedBy = s.pb || 'host';
+        state = 'paused';
+        showPauseOverlay(); // shows the overlay + keeps the "Dijeda oleh…" label fresh
+      }
     }
     /* -------- Guest input streaming -------- */
     function readLocalInput(){
@@ -1594,8 +1699,11 @@
     /* ---------------- Touch controls ---------------- */
     var isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
     var touchEl = document.getElementById('touchControls');
+    var pauseBtnEl = document.getElementById('btnPauseTouch');
     function updateTouchVisibility(){
-      touchEl.classList.toggle('on', isTouch && (state === 'playing' || state === 'countdown'));
+      var inGame = state === 'playing' || state === 'countdown';
+      touchEl.classList.toggle('on', isTouch && inGame);
+      pauseBtnEl.classList.toggle('on', isTouch && inGame);
     }
     var joyBase = document.getElementById('joyBase'), joyStick = document.getElementById('joyStick');
     var joyId = null;
