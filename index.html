@@ -1,0 +1,1684 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Press+Start+2P&display=swap" rel="stylesheet" />
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <title>Dapur Chaos Kuro</title>
+    <style>
+      :root{
+        --page-bg:#0d1a10;
+        --page-ink:#f3e7d3;
+        --panel:rgba(10,20,14,.95);
+        --panel-edge:#f5c542;
+        --accent:#f5c542;
+        --accent-ink:#221a05;
+        --chip:#1d2f20;
+        --gold:#ffd23e;
+      }
+      @media (prefers-color-scheme: dark){
+        :root{
+          --page-bg:#081209;
+          --page-ink:#f3e7d3;
+          --panel:rgba(10,20,14,.95);
+          --panel-edge:#f5c542;
+          --accent:#f5c542;
+          --accent-ink:#221a05;
+          --chip:#1d2f20;
+          --gold:#ffd23e;
+        }
+      }
+      html,body{ margin:0; padding:0; }
+      body{
+        background:var(--page-bg);
+        color:var(--page-ink);
+        font-family:"Baloo 2","Trebuchet MS",Verdana,sans-serif;
+        min-height:100dvh;
+        display:flex; flex-direction:column; align-items:center;
+        padding:10px 10px 16px;
+      }
+      .stage{
+        position:relative;
+        width:min(1180px, 97vw, 148vh);
+        aspect-ratio:16/9;
+        border-radius:14px;
+        overflow:hidden;
+        box-shadow:0 14px 40px rgba(0,0,0,.35);
+        background:#2b1c12;
+        flex:none;
+      }
+      canvas{ display:block; width:100%; height:100%; }
+      .overlay{
+        position:absolute; inset:0;
+        display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+        overflow-y:auto;
+        text-align:center; padding:14px 18px;
+        background:rgba(4,10,6,.45);
+        color:#fdf3df;
+        z-index:5;
+      }
+      .overlay.solid{ background:rgba(4,10,6,.78); }
+      .overlay > *:first-child{ margin-top:auto; }
+      .overlay > *:last-child{ margin-bottom:auto; }
+      .overlay.hidden{ display:none; }
+      .panel{
+        box-sizing:border-box;
+        background:rgba(10,20,14,.95);
+        border:2px solid var(--accent);
+        border-radius:12px;
+        box-shadow:0 18px 44px rgba(0,0,0,.65), 0 0 0 4px rgba(0,0,0,.35), inset 0 0 0 2px rgba(0,0,0,.45);
+        padding:20px 26px 22px;
+        max-width:min(680px,94%);
+        display:flex; flex-direction:column; align-items:center;
+      }
+      .overlay h1{
+        margin:0 0 10px; font-family:"Press Start 2P",monospace; font-size:clamp(19px,3.6vw,36px); font-weight:400; line-height:1.35; letter-spacing:1px;
+        color:var(--gold); text-shadow:0 3px 0 #7a5410, 0 6px 18px rgba(0,0,0,.6);
+      }
+      .overlay h2{ margin:0 0 8px; font-family:"Press Start 2P",monospace; font-size:clamp(15px,2.6vw,24px); font-weight:400; line-height:1.4; color:var(--gold); text-shadow:0 2px 0 #7a5410; }
+      .overlay p{ margin:4px 0; font-size:clamp(13px,1.8vw,17px); line-height:1.45; max-width:640px; }
+      .credit{ margin-top:14px; font-size:12px; opacity:.75; letter-spacing:.4px; }
+      .btn{
+        font-family:inherit; font-weight:800; cursor:pointer;
+        font-size:clamp(15px,2.2vw,20px); letter-spacing:.4px;
+        color:var(--accent-ink); background:var(--accent);
+        border:2px solid var(--accent); border-radius:8px; padding:12px 30px; margin-top:12px;
+        box-shadow:0 5px 0 #8a6a10, 0 10px 22px rgba(0,0,0,.45);
+        transition:transform .08s ease, box-shadow .08s ease, filter .08s ease;
+        min-width:min(340px,80vw);
+      }
+      .btn:hover{ filter:brightness(1.1); transform:translateY(-1px); }
+      .btn:active{ transform:translateY(4px); box-shadow:0 1px 0 #8a6a10; }
+      .btn:disabled{ opacity:.45; cursor:not-allowed; transform:none; filter:none; }
+      .btn.secondary{ background:transparent; color:var(--accent); box-shadow:0 5px 0 rgba(0,0,0,.55), 0 10px 22px rgba(0,0,0,.35); }
+      .btn.secondary:active{ box-shadow:0 1px 0 rgba(0,0,0,.55); }
+      .btn.small{ min-width:0; padding:8px 18px; font-size:14px; margin-top:0; }
+      /* Multiplayer form */
+      .mp-cols{ display:flex; gap:14px; flex-wrap:wrap; justify-content:center; margin-top:8px; width:100%; }
+      .mp-box{
+        box-sizing:border-box;
+        flex:1 1 240px; max-width:300px; text-align:center;
+        background:rgba(255,255,255,.05); border:2px solid rgba(245,197,66,.5); border-radius:10px;
+        padding:12px 14px 14px;
+      }
+      .mp-box h3{ margin:0 0 4px; font-family:"Press Start 2P",monospace; font-size:12px; font-weight:400; color:var(--gold); line-height:1.5; }
+      .mp-box p{ font-size:13px; }
+      .mp-box .btn{ min-width:0; width:100%; }
+      .room-code{
+        font-family:"Press Start 2P",monospace; font-size:clamp(22px,4vw,32px); color:#fff;
+        letter-spacing:4px; margin:8px 0 2px; text-shadow:0 2px 0 rgba(0,0,0,.6);
+      }
+      .mp-status{ min-height:20px; font-size:13.5px; color:#ffeec4; margin-top:8px; line-height:1.4; }
+      .mp-status.err{ color:#ff8a7a; font-weight:700; }
+      .code-input{
+        font-family:"Press Start 2P",monospace; font-size:20px; text-align:center; text-transform:uppercase;
+        width:170px; padding:10px 6px; margin-top:6px; border-radius:8px;
+        border:2px solid var(--accent); background:#0a140e; color:#fff; letter-spacing:3px; outline:none;
+      }
+      .code-input:focus{ box-shadow:0 0 0 3px rgba(245,197,66,.35); }
+      /* In-game multiplayer bar */
+      #mpBar{
+        position:absolute; left:50%; transform:translateX(-50%); bottom:8px; z-index:6;
+        display:none; align-items:center; gap:10px;
+        background:rgba(10,20,14,.95); border:2px solid var(--accent); border-radius:10px;
+        box-shadow:0 8px 22px rgba(0,0,0,.55);
+        padding:6px 8px 6px 14px; color:#ffeec4; font-size:13.5px; font-weight:700;
+        max-width:94%;
+      }
+      #mpBar.on{ display:flex; }
+      #mpBar .dot-live{ width:9px; height:9px; border-radius:50%; background:#7be495; flex:none; }
+      #mpBar button{
+        font-family:inherit; font-weight:800; font-size:12.5px; cursor:pointer;
+        background:transparent; color:var(--accent); border:2px solid var(--accent); border-radius:8px; padding:5px 12px;
+      }
+      .controls-grid{
+        display:flex; gap:14px; flex-wrap:wrap; justify-content:center; margin-top:12px;
+      }
+      .ctl-card{
+        background:rgba(255,255,255,.05); border:2px solid rgba(245,197,66,.5);
+        border-radius:10px; padding:10px 14px; min-width:min(230px,76vw); text-align:left;
+        font-size:clamp(12px,1.6vw,15px); line-height:1.55;
+      }
+      @media (max-height:520px){
+        .overlay{ padding:8px 12px; }
+        .overlay h1{ font-size:24px; }
+        .overlay h2{ font-size:20px; }
+        .overlay p{ font-size:12px; margin:2px 0; }
+        .controls-grid{ margin-top:6px; gap:8px; }
+        .ctl-card{ padding:6px 10px; font-size:12px; line-height:1.4; }
+        .btn{ margin-top:8px; padding:8px 20px; font-size:15px; min-width:min(280px,78vw); }
+        .panel{ padding:12px 16px 14px; }
+        .stars{ font-size:34px; }
+      }
+      .ctl-card b.name-raka{ color:#ff8a7a; }
+      .ctl-card b.name-gora{ color:#8ac3ff; }
+      .ctl-card .keys{ color:#ffd873; font-weight:700; }
+      .stars{ font-size:clamp(38px,7vw,64px); letter-spacing:6px; color:#ffd23e; text-shadow:0 3px 10px rgba(0,0,0,.5); margin:4px 0; }
+      .stars .off{ color:rgba(255,255,255,.25); text-shadow:none; }
+      .stat-row{ display:flex; gap:22px; flex-wrap:wrap; justify-content:center; margin-top:6px; font-size:clamp(14px,2vw,19px); }
+      .stat-row b{ color:#ffd873; }
+      #rotateHint{ z-index:9; background:rgba(6,14,9,.94); }
+      .rotate-icon{ font-size:52px; margin-bottom:8px; animation:tilt 1.6s ease-in-out infinite; display:inline-block; }
+      @keyframes tilt{ 0%,100%{ transform:rotate(-18deg);} 50%{ transform:rotate(70deg);} }
+      @media (prefers-reduced-motion: reduce){ .rotate-icon{ animation:none; } }
+      /* Touch controls */
+      #touchControls{ position:absolute; inset:auto 0 0 0; display:none; justify-content:space-between; align-items:flex-end; padding:0 14px 14px; z-index:4; pointer-events:none; }
+      #touchControls.on{ display:flex; }
+      #joyBase{
+        pointer-events:auto; position:relative; width:118px; height:118px; border-radius:50%;
+        background:rgba(255,255,255,.14); border:2px solid rgba(255,255,255,.35);
+        touch-action:none;
+      }
+      #joyStick{
+        position:absolute; left:50%; top:50%; width:54px; height:54px; border-radius:50%;
+        background:rgba(255,216,115,.85); transform:translate(-50%,-50%);
+        box-shadow:0 3px 8px rgba(0,0,0,.4);
+      }
+      .touch-btns{ display:flex; gap:10px; align-items:flex-end; pointer-events:none; }
+      .tbtn{
+        pointer-events:auto; font-family:inherit; font-weight:800; color:#fff;
+        border:2px solid rgba(255,255,255,.4); border-radius:50%;
+        touch-action:none; user-select:none; -webkit-user-select:none;
+      }
+      #btnTouchInteract{ width:86px; height:86px; font-size:13px; background:rgba(214,69,65,.82); }
+      #btnTouchDash{ width:62px; height:62px; font-size:12px; background:rgba(91,127,166,.82); }
+      .tbtn:active{ filter:brightness(1.25); }
+      /* Legend under the stage */
+      .legend{
+        width:min(1180px,97vw); margin-top:10px;
+        display:flex; gap:10px; flex-wrap:wrap; justify-content:center;
+      }
+      .legend .card{
+        background:var(--panel); border:2px solid var(--panel-edge); border-radius:10px;
+        box-shadow:0 10px 24px rgba(0,0,0,.45);
+        padding:8px 14px; font-size:14px; line-height:1.5; flex:1 1 260px; max-width:380px;
+      }
+      .legend .card h3{ margin:0 0 2px; font-size:15px; }
+      .legend .k{
+        display:inline-block; background:var(--chip); border:1px solid var(--panel-edge);
+        border-bottom-width:2.5px; border-radius:6px; padding:0 6px; font-weight:700; font-size:13px;
+      }
+      .dot{ display:inline-block; width:10px; height:10px; border-radius:50%; vertical-align:middle; margin-right:5px; }
+    </style>
+  </head>
+  <body>
+    <div class="stage" id="stage">
+      <canvas id="game" width="1280" height="720"></canvas>
+
+      <!-- Touch controls (Raka) -->
+      <div id="touchControls">
+        <div id="joyBase"><div id="joyStick"></div></div>
+        <div class="touch-btns">
+          <button class="tbtn" id="btnTouchDash" type="button">DASH</button>
+          <button class="tbtn" id="btnTouchInteract" type="button">AMBIL /<br/>TARUH</button>
+        </div>
+      </div>
+
+      <!-- Multiplayer status bar (in-game) -->
+      <div id="mpBar">
+        <span class="dot-live"></span>
+        <span id="mpBarText">Online</span>
+        <button id="btnDisconnect" type="button">PUTUSKAN</button>
+      </div>
+
+      <!-- Title screen / main menu -->
+      <div class="overlay" id="titleScreen">
+        <div class="panel">
+          <h1>DAPUR CHAOS<br/>KURO</h1>
+          <p>Pesanan datang terus, dapur makin kacau! Ambil bahan &rarr; potong &amp; masak &rarr; taruh di piring &rarr; sajikan sebelum tiketnya hangus. Jangan sampai ada yang gosong!</p>
+          <button class="btn" id="btnStart" type="button">MAIN SOLO / CO-OP LOKAL</button>
+          <button class="btn secondary" id="btnOnline" type="button">MULTIPLAYER ONLINE</button>
+          <button class="btn secondary" id="btnHow" type="button">CARA MAIN</button>
+          <div class="credit">Level 150 detik &middot; kejar 800 poin untuk 3 bintang!<br/>Dapur Chaos Kuro &mdash; dimasak dengan kode, tanpa aset jiplakan.</div>
+        </div>
+      </div>
+
+      <!-- How to play -->
+      <div class="overlay solid hidden" id="howScreen">
+        <div class="panel">
+          <h2>CARA MAIN</h2>
+          <p>Ambil bahan dari krat &rarr; potong sayur di talenan (tahan tombol) &rarr; masak daging di kompor (jangan sampai gosong!) &rarr; susun di piring &rarr; sajikan di Meja Saji. Piring kotor balik ke wastafel &mdash; tahan tombol untuk mencuci.</p>
+          <div class="controls-grid">
+            <div class="ctl-card">
+              <b class="name-raka">&#9679; RAKA</b> (rambut perak)<br/>
+              Gerak: <span class="keys">W A S D</span><br/>
+              Interaksi / tahan potong &amp; cuci: <span class="keys">E</span><br/>
+              Dash: <span class="keys">Shift kiri</span>
+            </div>
+            <div class="ctl-card">
+              <b class="name-gora">&#9679; GORA</b> (rambut coklat)<br/>
+              Gerak: <span class="keys">&#8592; &#8593; &#8595; &#8594;</span><br/>
+              Interaksi / tahan potong &amp; cuci: <span class="keys">.</span> (titik)<br/>
+              Dash: <span class="keys">/</span>
+            </div>
+          </div>
+          <p style="margin-top:10px;">Co-op lokal: dua koki, satu keyboard. Online: tiap pemain di perangkatnya sendiri memakai skema utama (WASD + E + Shift / sentuh). Di HP: joystick + tombol. <span class="keys" style="color:#ffd873;font-weight:700;">R</span> ulang level &middot; <span class="keys" style="color:#ffd873;font-weight:700;">P</span> jeda (lokal).</p>
+          <button class="btn" id="btnHowBack" type="button">KEMBALI</button>
+        </div>
+      </div>
+
+      <!-- Multiplayer lobby -->
+      <div class="overlay solid hidden" id="mpScreen">
+        <div class="panel">
+          <h2>MULTIPLAYER ONLINE</h2>
+          <p>Satu dapur, dua perangkat. Host menjadi <b style="color:#ff8a7a;">Raka</b>, tamu menjadi <b style="color:#8ac3ff;">Gora</b>. Host yang menjalankan dapurnya &mdash; tamu tinggal ikut masak.</p>
+          <div class="mp-cols">
+            <div class="mp-box">
+              <h3>BUAT ROOM</h3>
+              <p>Kamu jadi host (Raka). Bagikan kodenya ke temanmu.</p>
+              <button class="btn" id="btnCreateRoom" type="button">BUAT ROOM</button>
+              <div class="room-code" id="hostCode" style="display:none;"></div>
+              <div class="mp-status" id="hostStatus"></div>
+              <button class="btn" id="btnHostStart" type="button" style="display:none;" disabled>MULAI</button>
+            </div>
+            <div class="mp-box">
+              <h3>GABUNG ROOM</h3>
+              <p>Kamu jadi tamu (Gora). Masukkan kode room dari host.</p>
+              <input class="code-input" id="joinCode" type="text" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="KODE" aria-label="Kode room 5 karakter" />
+              <button class="btn" id="btnJoinRoom" type="button">GABUNG</button>
+              <div class="mp-status" id="guestStatus"></div>
+            </div>
+          </div>
+          <div class="mp-status err" id="mpError"></div>
+          <button class="btn secondary" id="btnMpBack" type="button">KEMBALI KE MENU</button>
+        </div>
+      </div>
+
+      <!-- Disconnect notice -->
+      <div class="overlay solid hidden" id="dcScreen">
+        <div class="panel">
+          <h2>KONEKSI PUTUS</h2>
+          <p id="dcText">Koneksi ke pemain lain terputus. Game dijeda.</p>
+          <button class="btn" id="btnDcMenu" type="button">KEMBALI KE MENU</button>
+        </div>
+      </div>
+
+      <!-- Pause -->
+      <div class="overlay solid hidden" id="pauseScreen">
+        <div class="panel">
+          <h2>ISTIRAHAT DULU</h2>
+          <p>Dapur aman, kompor nggak akan gosong selama jeda. Santai.</p>
+          <button class="btn" id="btnResume" type="button">LANJUT MASAK</button>
+          <button class="btn secondary" id="btnRestartFromPause" type="button">ULANG LEVEL</button>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div class="overlay solid hidden" id="resultScreen">
+        <div class="panel">
+          <h2>WAKTU HABIS!</h2>
+          <div class="stars" id="resultStars"></div>
+          <div class="stat-row">
+            <span>Skor akhir: <b id="resultScore">0</b></span>
+            <span>Pesanan selesai: <b id="resultServed">0</b></span>
+            <span>Pesanan gagal: <b id="resultFailed">0</b></span>
+          </div>
+          <p id="resultNote"></p>
+          <p id="guestWaitNote" style="display:none;">Menunggu host memulai lagi&hellip;</p>
+          <button class="btn" id="btnAgain" type="button">MAIN LAGI</button>
+          <button class="btn secondary" id="btnResultMenu" type="button" style="display:none;">KE MENU</button>
+        </div>
+      </div>
+
+      <!-- Rotate hint -->
+      <div class="overlay hidden" id="rotateHint">
+        <div class="rotate-icon">&#128241;</div>
+        <h2>Putar HP kamu ke landscape</h2>
+        <p>Dapurnya lebar — miringkan HP biar semua stasiun kelihatan dan enak dimainkan.</p>
+      </div>
+    </div>
+
+    <div class="legend">
+      <div class="card">
+        <h3><span class="dot" style="background:#e0492f;"></span>Raka</h3>
+        Gerak <span class="k">W</span><span class="k">A</span><span class="k">S</span><span class="k">D</span> &middot; Interaksi <span class="k">E</span> (tahan untuk memotong &amp; mencuci) &middot; Dash <span class="k">Shift</span>
+      </div>
+      <div class="card">
+        <h3><span class="dot" style="background:#2470c2;"></span>Gora</h3>
+        Gerak <span class="k">&#8592;</span><span class="k">&#8593;</span><span class="k">&#8595;</span><span class="k">&#8594;</span> &middot; Interaksi <span class="k">.</span> &middot; Dash <span class="k">/</span> &middot; Jeda <span class="k">P</span> &middot; Ulang <span class="k">R</span>
+      </div>
+      <div class="card">
+        <h3>Resep</h3>
+        Burger = bun + patty matang (60) &middot; Salad = selada cincang + tomat cincang (50) &middot; Burger Deluxe = bun + patty + selada cincang (90). Makin cepat saji, makin besar tipnya (maks +40)!
+      </div>
+    </div>
+
+    <script>
+    "use strict";
+    /* ============================================================
+       DAPUR CHAOS KURO — co-op cooking game, all visuals code-drawn
+       ============================================================ */
+    var W = 1280, H = 720, T = 80;
+    var canvas = document.getElementById('game');
+    var ctx = canvas.getContext('2d');
+
+    var RECIPES = {
+      burger: { name:'Burger',        parts:['bun','patty'],               base:60 },
+      salad:  { name:'Salad',         parts:['lettuce_c','tomato_c'],      base:50 },
+      deluxe: { name:'Burger Deluxe', parts:['bun','patty','lettuce_c'],   base:90 }
+    };
+    var RECIPE_KEYS = ['burger','salad','deluxe'];
+    var KEY_ICON = { // key -> [type,state] for drawing
+      bun:['bun','raw'], patty:['meat','cooked'],
+      lettuce_c:['lettuce','chopped'], tomato_c:['tomato','chopped']
+    };
+    var LEVEL_TIME = 150, TICKET_TIME = 50;
+
+    /* ---------------- Audio (procedural WebAudio) ---------------- */
+    var AC = null;
+    function initAudio(){
+      if (AC){ if (AC.resume) AC.resume(); return; }
+      try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){ AC = null; }
+    }
+    function tone(f, d, type, v, delay, f2){
+      if (!AC) return;
+      var t0 = AC.currentTime + (delay || 0);
+      var o = AC.createOscillator(), g = AC.createGain();
+      o.type = type || 'sine';
+      o.frequency.setValueAtTime(f, t0);
+      if (f2) o.frequency.exponentialRampToValueAtTime(f2, t0 + d);
+      g.gain.setValueAtTime(v || 0.12, t0);
+      g.gain.exponentialRampToValueAtTime(0.001, t0 + d);
+      o.connect(g); g.connect(AC.destination);
+      o.start(t0); o.stop(t0 + d + 0.03);
+    }
+    function noiseS(d, v, fq, type, delay){
+      if (!AC) return;
+      var t0 = AC.currentTime + (delay || 0);
+      var len = Math.max(1, (AC.sampleRate * d) | 0);
+      var buf = AC.createBuffer(1, len, AC.sampleRate);
+      var ch = buf.getChannelData(0);
+      for (var i = 0; i < len; i++) ch[i] = Math.random() * 2 - 1;
+      var src = AC.createBufferSource(); src.buffer = buf;
+      var f = AC.createBiquadFilter(); f.type = type || 'lowpass'; f.frequency.value = fq;
+      var g = AC.createGain();
+      g.gain.setValueAtTime(v, t0);
+      g.gain.exponentialRampToValueAtTime(0.001, t0 + d);
+      src.connect(f); f.connect(g); g.connect(AC.destination);
+      src.start(t0);
+    }
+    var SFX_SYNC = { done: 1, serve: 1, buzz: 1, chop: 1, splash: 1, trash: 1, tick: 1, pickup: 1, place: 1 };
+    function sfx(name){
+      // Host: forward important one-shot sounds to the guest with the next snapshot.
+      if (typeof mp !== 'undefined' && mp.mode === 'host' && SFX_SYNC[name] && mp.pendingEvents.indexOf(name) < 0)
+        mp.pendingEvents.push(name);
+      if (!AC) return;
+      switch(name){
+        case 'click':  tone(700, .06, 'square', .06); break;
+        case 'pickup': tone(420, .09, 'sine', .12, 0, 660); break;
+        case 'place':  tone(300, .07, 'sine', .12, 0, 190); break;
+        case 'chop':   noiseS(.06, .20, 1500); tone(160, .05, 'square', .10); break;
+        case 'done':   tone(660, .08, 'sine', .12); tone(880, .11, 'sine', .12, .07); break;
+        case 'serve':  tone(784, .1, 'sine', .13); tone(988, .1, 'sine', .13, .08); tone(1318, .24, 'sine', .13, .16); break;
+        case 'buzz':   tone(150, .28, 'sawtooth', .13, 0, 105); break;
+        case 'trash':  noiseS(.12, .15, 600); break;
+        case 'splash': noiseS(.16, .10, 900); break;
+        case 'sizzle': noiseS(.09, .030, 5200, 'highpass'); break;
+        case 'dash':   noiseS(.12, .05, 1200, 'bandpass'); break;
+        case 'tick':   tone(980, .05, 'square', .07); break;
+      }
+    }
+
+    /* ---------------- Game state ---------------- */
+    var state = 'title'; // title | countdown | playing | paused | results
+    var stations = [], chefs = [], tickets = [], floaters = [], particles = [];
+    var score = 0, served = 0, failed = 0;
+    var timeLeft = LEVEL_TIME, spawnT = 0, sizzleT = 0, lastWholeSec = -1;
+    var cleanPlates = 3, dirtyPlates = 0, pendingDirty = [];
+    var cdT = 0; // countdown seconds remaining (online + local start)
+
+    /* ---------------- Multiplayer (PeerJS, host-authoritative) ---------------- */
+    var MP_PREFIX = 'dapurchaos-kuro-';
+    var mp = {
+      mode: 'local',          // local | host | guest
+      peer: null, conn: null, code: '',
+      guestReady: false,      // host: a guest is connected
+      snapT: 0,               // host broadcast accumulator
+      inputT: 0,              // guest input heartbeat accumulator
+      lastInputJson: '',
+      pendingEvents: []       // host: one-shot sfx flags for next snapshot
+    };
+    var guestInput = { v: { x: 0, y: 0 }, interact: false, dash: false }; // host-side view of guest keys
+    var snapTargets = null;   // guest-side interpolation targets
+
+    function addStation(gx, gy, type, label){
+      var st = { x: gx * T, y: gy * T, w: T, h: T, type: type, label: label || '',
+                 item: null, progress: 0, chopT: 0 };
+      stations.push(st); return st;
+    }
+    function buildStations(){
+      stations = [];
+      // top row: serving, plates, trash, staging counters
+      addStation(6, 0, 'serve', 'Meja Saji');
+      addStation(7, 0, 'serve', '');
+      addStation(8, 0, 'serve', '');
+      addStation(9, 0, 'serve', '');
+      addStation(10, 0, 'plates', 'Piring');
+      addStation(11, 0, 'trash', 'Sampah');
+      addStation(12, 0, 'counter', 'Meja');
+      addStation(13, 0, 'counter', '');
+      addStation(14, 0, 'counter', '');
+      addStation(15, 0, 'counter', '');
+      // left crates
+      addStation(0, 2, 'crate_meat', 'Daging');
+      addStation(0, 3, 'crate_bun', 'Roti Bun');
+      addStation(0, 4, 'crate_lettuce', 'Selada');
+      addStation(0, 5, 'crate_tomato', 'Tomat');
+      // center island: counters + 2 cutting boards
+      addStation(5, 4, 'counter', 'Meja');
+      addStation(6, 4, 'board', 'Talenan');
+      addStation(7, 4, 'board', 'Talenan');
+      addStation(8, 4, 'counter', 'Meja');
+      addStation(9, 4, 'counter', '');
+      // right staging
+      addStation(15, 2, 'counter', 'Meja');
+      addStation(15, 3, 'counter', '');
+      // bottom row: stoves + sink
+      addStation(2, 8, 'counter', 'Meja');
+      addStation(3, 8, 'stove', 'Kompor');
+      addStation(4, 8, 'stove', 'Kompor');
+      addStation(5, 8, 'counter', 'Meja');
+      addStation(6, 8, 'counter', '');
+      addStation(8, 8, 'sink', 'Wastafel');
+      addStation(9, 8, 'counter', 'Meja');
+      addStation(10, 8, 'counter', '');
+    }
+    function sinkStation(){ for (var i = 0; i < stations.length; i++) if (stations[i].type === 'sink') return stations[i]; return null; }
+
+    function makeChef(name, color, hair, x, y, scheme){
+      return { name: name, color: color, hair: hair, x: x, y: y, r: 21,
+               dir: { x: 0, y: 1 }, holding: null, target: null,
+               dashT: 0, dashCd: 0, dashDir: { x: 0, y: 1 },
+               interactHeld: false, interactPrev: false, walkPhase: 0, scheme: scheme };
+    }
+    function resetGame(){
+      buildStations();
+      chefs = [
+        makeChef('Raka', '#e0492f', '#dfe6ee', 250, 540, 'raka'),
+        makeChef('Gora', '#2470c2', '#e08a3c', 1030, 190, 'gora')
+      ];
+      tickets = []; floaters = []; particles = []; pendingDirty = [];
+      score = 0; served = 0; failed = 0;
+      timeLeft = LEVEL_TIME; cleanPlates = 3; dirtyPlates = 0;
+      spawnT = 7; sizzleT = 0; lastWholeSec = -1;
+      spawnTicket();
+    }
+
+    /* ---------------- Orders ---------------- */
+    function spawnTicket(){
+      if (tickets.length >= 4) return;
+      var key = RECIPE_KEYS[(Math.random() * RECIPE_KEYS.length) | 0];
+      tickets.push({ recipe: key, t: TICKET_TIME, total: TICKET_TIME });
+    }
+    function ingKey(ing){
+      if (!ing) return null;
+      if (ing.type === 'bun') return 'bun';
+      if (ing.type === 'meat') return ing.state === 'cooked' ? 'patty' : (ing.state === 'burnt' ? 'burnt' : 'raw_meat');
+      if (ing.type === 'lettuce') return ing.state === 'chopped' ? 'lettuce_c' : 'raw_lettuce';
+      if (ing.type === 'tomato') return ing.state === 'chopped' ? 'tomato_c' : 'raw_tomato';
+      return null;
+    }
+    function canAdd(contents, key){
+      for (var i = 0; i < RECIPE_KEYS.length; i++){
+        var parts = RECIPES[RECIPE_KEYS[i]].parts;
+        if (parts.indexOf(key) < 0) continue;
+        if (contents.indexOf(key) >= 0) continue;
+        var ok = true;
+        for (var j = 0; j < contents.length; j++) if (parts.indexOf(contents[j]) < 0) { ok = false; break; }
+        if (ok) return true;
+      }
+      return false;
+    }
+    function recipeKeyFor(contents){
+      for (var i = 0; i < RECIPE_KEYS.length; i++){
+        var parts = RECIPES[RECIPE_KEYS[i]].parts;
+        if (parts.length !== contents.length) continue;
+        var ok = true;
+        for (var j = 0; j < parts.length; j++) if (contents.indexOf(parts[j]) < 0) { ok = false; break; }
+        if (ok) return RECIPE_KEYS[i];
+      }
+      return null;
+    }
+
+    /* ---------------- Feedback ---------------- */
+    function say(chef, txt, color){
+      floaters.push({ x: chef.x, y: chef.y - 58, txt: txt, color: color || '#fff', life: 1.15 });
+    }
+    function burst(x, y, n, color, spread){
+      for (var i = 0; i < n; i++){
+        var a = Math.random() * Math.PI * 2, sp = 30 + Math.random() * (spread || 70);
+        particles.push({ x: x, y: y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 30,
+                         life: .5 + Math.random() * .4, max: .9, color: color, size: 2.5 + Math.random() * 3 });
+      }
+    }
+
+    /* ---------------- Interaction ---------------- */
+    function plateAddFeedback(c, key){
+      if (key === 'raw_meat') say(c, 'Dagingnya masak dulu!', '#ff9f43');
+      else if (key === 'raw_lettuce' || key === 'raw_tomato') say(c, 'Potong dulu di talenan!', '#ff9f43');
+      else if (key === 'burnt') say(c, 'Sudah gosong! Buang dulu', '#ff6b5e');
+      else say(c, 'Nggak cocok!', '#ff6b5e');
+    }
+    function tryPlateAdd(c, plate, ing, onOk){
+      var key = ingKey(ing);
+      if (canAdd(plate.contents, key)){
+        plate.contents.push(key); onOk(); sfx('place');
+      } else {
+        plateAddFeedback(c, key); sfx('buzz');
+      }
+    }
+    function surfaceInteract(c, st){
+      var held = c.holding, here = st.item;
+      // On a board, a raw choppable ingredient stays put on press: holding
+      // the button is what chops it (picking it up on press would make
+      // chopping impossible). Chopped / non-choppable items pick up normally.
+      if (!held && here && st.type === 'board' && here.kind === 'ing' &&
+          (here.type === 'lettuce' || here.type === 'tomato') && here.state === 'raw') return;
+      if (!held && here){
+        st.item = null; c.holding = here;
+        if (st.type === 'board') st.progress = 0;
+        sfx('pickup'); return;
+      }
+      if (held && !here){ st.item = held; c.holding = null; sfx('place'); return; }
+      if (held && here){
+        if (held.kind === 'plate' && here.kind === 'ing'){
+          tryPlateAdd(c, held, here, function(){ st.item = null; if (st.type === 'board') st.progress = 0; });
+          return;
+        }
+        if (held.kind === 'ing' && here.kind === 'plate'){
+          tryPlateAdd(c, here, held, function(){ c.holding = null; });
+          return;
+        }
+        say(c, 'Mejanya penuh!', '#ff9f43');
+      }
+    }
+    function stoveInteract(c, st){
+      var held = c.holding, pan = st.item;
+      if (!pan){
+        if (held && held.kind === 'ing' && held.type === 'meat' && held.state === 'raw'){
+          held.t = 0; st.item = held; c.holding = null; sfx('place');
+        } else if (held) say(c, 'Wajan cuma buat daging', '#ff9f43');
+        return;
+      }
+      if (!held){ c.holding = pan; st.item = null; sfx('pickup'); return; }
+      if (held.kind === 'plate'){
+        if (pan.state === 'cooked') tryPlateAdd(c, held, pan, function(){ st.item = null; });
+        else if (pan.state === 'burnt') say(c, 'Gosong! Buang ke sampah', '#ff6b5e');
+        else say(c, 'Belum matang!', '#ff9f43');
+        return;
+      }
+      say(c, 'Wajannya lagi dipakai', '#ff9f43');
+    }
+    function servePlate(c, st){
+      var plate = c.holding;
+      if (!plate || plate.kind !== 'plate') return;
+      if (plate.contents.length === 0){ say(c, 'Piringnya masih kosong!', '#ff9f43'); return; }
+      var rk = recipeKeyFor(plate.contents);
+      var idx = -1;
+      if (rk) for (var i = 0; i < tickets.length; i++) if (tickets[i].recipe === rk) { idx = i; break; }
+      if (idx < 0){ sfx('buzz'); say(c, 'Nggak ada pesanan yang cocok!', '#ff6b5e'); return; }
+      var tk = tickets[idx];
+      var tip = Math.round(40 * tk.t / tk.total);
+      var gain = RECIPES[tk.recipe].base + tip;
+      score += gain; served++;
+      tickets.splice(idx, 1);
+      c.holding = null;
+      pendingDirty.push(6);
+      sfx('serve');
+      burst(st.x + st.w / 2, st.y + st.h / 2, 16, '#ffd23e', 90);
+      say(c, '+' + gain + ' poin!', '#7be495');
+    }
+    function doInteract(c){
+      var st = c.target;
+      if (st && st.type === 'serve'){
+        if (c.holding && c.holding.kind === 'plate') servePlate(c, st);
+        else if (c.holding) say(c, 'Sajikan pakai piring dulu', '#ff9f43');
+        return;
+      }
+      if (!st) return;
+      switch (st.type){
+        case 'crate_meat': case 'crate_bun': case 'crate_lettuce': case 'crate_tomato':
+          if (!c.holding){
+            c.holding = { kind: 'ing', type: st.type.slice(6), state: 'raw', t: 0 };
+            sfx('pickup');
+          }
+          break;
+        case 'plates':
+          if (!c.holding){
+            if (cleanPlates > 0){ cleanPlates--; c.holding = { kind: 'plate', contents: [] }; sfx('pickup'); }
+            else say(c, 'Piring bersih habis! Cuci dulu', '#ff6b5e');
+          }
+          break;
+        case 'trash':
+          if (c.holding){
+            if (c.holding.kind === 'ing'){ c.holding = null; sfx('trash'); say(c, 'Dibuang', '#cfc4ae'); }
+            else if (c.holding.contents.length){ c.holding.contents = []; sfx('trash'); say(c, 'Isi piring dibuang', '#cfc4ae'); }
+          }
+          break;
+        case 'sink': break; // washing is hold-based
+        case 'stove': stoveInteract(c, st); break;
+        default: surfaceInteract(c, st); break;
+      }
+    }
+
+    /* ---------------- Input ---------------- */
+    var keys = {};
+    var joyVec = { x: 0, y: 0 }, touchInteract = false, touchDashEdge = false;
+    window.addEventListener('keydown', function(e){
+      if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Slash','Space'].indexOf(e.code) >= 0) e.preventDefault();
+      keys[e.code] = true;
+      if (mp.mode !== 'local') return; // online: host drives restarts, no local pause/restart
+      if (e.code === 'KeyR' && (state === 'playing' || state === 'results' || state === 'paused')){ startLevel(); }
+      if ((e.code === 'KeyP' || e.code === 'Escape')){
+        if (state === 'playing') pauseGame();
+        else if (state === 'paused') resumeGame();
+      }
+    });
+    window.addEventListener('keyup', function(e){ keys[e.code] = false; });
+
+    function chefInput(c){
+      var v = { x: 0, y: 0 }, interact = false, dash = false;
+      if (c.scheme === 'raka'){
+        if (keys.KeyA) v.x -= 1; if (keys.KeyD) v.x += 1;
+        if (keys.KeyW) v.y -= 1; if (keys.KeyS) v.y += 1;
+        if (Math.abs(joyVec.x) > 0.12 || Math.abs(joyVec.y) > 0.12){ v.x = joyVec.x; v.y = joyVec.y; }
+        interact = !!keys.KeyE || touchInteract;
+        dash = !!keys.ShiftLeft || !!keys.ShiftRight || touchDashEdge;
+      } else {
+        if (mp.mode === 'host'){
+          // Online host: Gora is driven by the guest's streamed input.
+          v.x = guestInput.v.x; v.y = guestInput.v.y;
+          interact = guestInput.interact;
+          dash = guestInput.dash;
+        } else {
+          if (keys.ArrowLeft) v.x -= 1; if (keys.ArrowRight) v.x += 1;
+          if (keys.ArrowUp) v.y -= 1; if (keys.ArrowDown) v.y += 1;
+          interact = !!keys.Period;
+          dash = !!keys.Slash;
+        }
+      }
+      return { v: v, interact: interact, dash: dash };
+    }
+
+    /* ---------------- Update ---------------- */
+    function collideStations(c){
+      for (var i = 0; i < stations.length; i++){
+        var st = stations[i];
+        var nx = Math.max(st.x, Math.min(c.x, st.x + st.w));
+        var ny = Math.max(st.y, Math.min(c.y, st.y + st.h));
+        var dx = c.x - nx, dy = c.y - ny, d2 = dx * dx + dy * dy;
+        if (d2 < c.r * c.r){
+          if (d2 > 0.001){
+            var d = Math.sqrt(d2);
+            c.x = nx + dx / d * c.r; c.y = ny + dy / d * c.r;
+          } else {
+            // center inside rect: push out along smallest penetration
+            var l = c.x - st.x, r = st.x + st.w - c.x, tp = c.y - st.y, bt = st.y + st.h - c.y;
+            var m = Math.min(l, r, tp, bt);
+            if (m === l) c.x = st.x - c.r; else if (m === r) c.x = st.x + st.w + c.r;
+            else if (m === tp) c.y = st.y - c.r; else c.y = st.y + st.h + c.r;
+          }
+        }
+      }
+    }
+    function findTarget(c){
+      var px = c.x + c.dir.x * 52, py = c.y + c.dir.y * 52;
+      var best = null, bestD = 1e9;
+      for (var i = 0; i < stations.length; i++){
+        var st = stations[i];
+        if (px >= st.x - 14 && px <= st.x + st.w + 14 && py >= st.y - 14 && py <= st.y + st.h + 14){
+          var cx = st.x + st.w / 2, cy = st.y + st.h / 2;
+          var d = (cx - c.x) * (cx - c.x) + (cy - c.y) * (cy - c.y);
+          if (d < bestD){ bestD = d; best = st; }
+        }
+      }
+      c.target = best;
+    }
+    function updateChef(c, dt){
+      var inp = chefInput(c);
+      var vx = inp.v.x, vy = inp.v.y;
+      var len = Math.hypot(vx, vy);
+      if (len > 1){ vx /= len; vy /= len; len = 1; }
+      c.dashCd -= dt;
+      if (inp.dash && c.dashCd <= 0 && c.dashT <= 0){
+        c.dashT = 0.16; c.dashCd = 1.0;
+        c.dashDir = len > 0.1 ? { x: vx, y: vy } : { x: c.dir.x, y: c.dir.y };
+        sfx('dash');
+      }
+      var speed = 265;
+      var mx = vx, my = vy;
+      if (c.dashT > 0){
+        c.dashT -= dt; speed = 640; mx = c.dashDir.x; my = c.dashDir.y;
+        particles.push({ x: c.x - c.dashDir.x * 18, y: c.y - c.dashDir.y * 18 + 6,
+                         vx: -c.dashDir.x * 60, vy: -c.dashDir.y * 60, life: .22, max: .22,
+                         color: 'rgba(255,255,255,.7)', size: 3 });
+      }
+      if (len > 0.1 && c.dashT <= 0){ c.dir = { x: vx, y: vy }; }
+      if (c.dashT > 0) c.dir = { x: c.dashDir.x, y: c.dashDir.y };
+      c.x += mx * speed * dt * (c.dashT > 0 ? 1 : Math.min(1, len || 1));
+      c.y += my * speed * dt * (c.dashT > 0 ? 1 : Math.min(1, len || 1));
+      if (len > 0.1 || c.dashT > 0) c.walkPhase += dt * 11; else c.walkPhase = 0;
+      c.x = Math.max(c.r + 4, Math.min(W - c.r - 4, c.x));
+      c.y = Math.max(c.r + 4, Math.min(H - c.r - 4, c.y));
+      collideStations(c);
+      findTarget(c);
+      // interact edge + hold
+      c.interactHeld = inp.interact;
+      if (inp.interact && !c.interactPrev) doInteract(c);
+      c.interactPrev = inp.interact;
+    }
+    function update(dt){
+      timeLeft -= dt;
+      var whole = Math.ceil(timeLeft);
+      if (whole !== lastWholeSec){ lastWholeSec = whole; if (whole <= 10 && whole > 0) sfx('tick'); }
+      if (timeLeft <= 0){ timeLeft = 0; endLevel(); return; }
+      // order spawning
+      spawnT -= dt;
+      if (spawnT <= 0){ spawnTicket(); spawnT = 12; }
+      // tickets
+      for (var i = tickets.length - 1; i >= 0; i--){
+        tickets[i].t -= dt;
+        if (tickets[i].t <= 0){
+          tickets.splice(i, 1);
+          failed++; score = Math.max(0, score - 30);
+          sfx('buzz');
+          floaters.push({ x: 70, y: 110 + i * 78, txt: '-30 Pesanan hangus!', color: '#ff6b5e', life: 1.4 });
+        }
+      }
+      // chefs
+      for (var j = 0; j < chefs.length; j++) updateChef(chefs[j], dt);
+      // chef-chef soft collision
+      var a = chefs[0], b = chefs[1];
+      var dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy), minD = a.r + b.r + 2;
+      if (d > 0.01 && d < minD){
+        var push = (minD - d) / 2, ux = dx / d, uy = dy / d;
+        a.x -= ux * push; a.y -= uy * push; b.x += ux * push; b.y += uy * push;
+        collideStations(a); collideStations(b);
+      }
+      // hold actions: chopping & washing
+      for (var s = 0; s < stations.length; s++){
+        var st = stations[s];
+        if (st.type === 'board' && st.item && st.item.kind === 'ing' &&
+            (st.item.type === 'lettuce' || st.item.type === 'tomato') && st.item.state === 'raw'){
+          var chopping = chefs.some(function(c){ return !c.holding && c.interactHeld && c.target === st; });
+          if (chopping){
+            st.progress += dt / 2.5;
+            st.chopT += dt;
+            if (st.chopT > 0.28){ st.chopT = 0; sfx('chop'); }
+            if (st.progress >= 1){ st.item.state = 'chopped'; st.progress = 0; sfx('done'); burst(st.x + 40, st.y + 30, 6, '#8fd14f', 50); }
+          }
+        }
+        if (st.type === 'stove' && st.item){
+          var it = st.item;
+          if (it.state === 'raw'){
+            it.t += dt;
+            if (it.t >= 8){ it.state = 'cooked'; it.t = 0; sfx('done'); burst(st.x + 40, st.y + 34, 5, '#ffd23e', 40); }
+          } else if (it.state === 'cooked'){
+            it.t += dt;
+            if (it.t >= 6){
+              it.state = 'burnt'; it.t = 0; sfx('buzz');
+              floaters.push({ x: st.x + 40, y: st.y - 6, txt: 'GOSONG!', color: '#ff6b5e', life: 1.2 });
+            }
+          } else if (it.state === 'burnt' && Math.random() < dt * 6){
+            particles.push({ x: st.x + 30 + Math.random() * 20, y: st.y + 26, vx: (Math.random() - .5) * 8,
+                             vy: -34 - Math.random() * 22, life: .8, max: .8, color: 'rgba(90,90,90,.55)', size: 4 + Math.random() * 4 });
+          }
+        }
+      }
+      // sizzle sound while any pan cooks
+      var anyCooking = stations.some(function(st){ return st.type === 'stove' && st.item && st.item.state === 'raw'; });
+      if (anyCooking){ sizzleT -= dt; if (sizzleT <= 0){ sfx('sizzle'); sizzleT = 0.14; } }
+      // washing
+      var sink = sinkStation();
+      if (sink){
+        var washing = dirtyPlates > 0 && chefs.some(function(c){ return !c.holding && c.interactHeld && c.target === sink; });
+        if (washing){
+          sink.progress += dt / 1.5;
+          if (Math.random() < dt * 8)
+            particles.push({ x: sink.x + 20 + Math.random() * 40, y: sink.y + 30, vx: (Math.random() - .5) * 14,
+                             vy: -20 - Math.random() * 16, life: .4, max: .4, color: 'rgba(170,220,255,.8)', size: 2.5 });
+          if (sink.progress >= 1){
+            sink.progress = 0; dirtyPlates--; cleanPlates = Math.min(3, cleanPlates + 1);
+            sfx('splash'); sfx('done');
+          }
+        } else if (sink.progress > 0) sink.progress = Math.max(0, sink.progress - dt * 2);
+      }
+      // dirty plates returning
+      for (var p = pendingDirty.length - 1; p >= 0; p--){
+        pendingDirty[p] -= dt;
+        if (pendingDirty[p] <= 0){ pendingDirty.splice(p, 1); dirtyPlates++; }
+      }
+      // particles & floaters
+      for (var q = particles.length - 1; q >= 0; q--){
+        var pt = particles[q];
+        pt.life -= dt; pt.x += pt.vx * dt; pt.y += pt.vy * dt;
+        if (pt.life <= 0) particles.splice(q, 1);
+      }
+      for (var f = floaters.length - 1; f >= 0; f--){
+        floaters[f].life -= dt; floaters[f].y -= 26 * dt;
+        if (floaters[f].life <= 0) floaters.splice(f, 1);
+      }
+    }
+
+    /* ---------------- Drawing ---------------- */
+    function rr(x, y, w, h, r){
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
+    function drawIngIcon(type, st8, x, y, s){
+      ctx.save(); ctx.translate(x, y);
+      var u = s / 40;
+      if (type === 'bun'){
+        ctx.fillStyle = '#e8b06a';
+        ctx.beginPath(); ctx.ellipse(0, -2 * u, 15 * u, 10 * u, 0, Math.PI, 0); ctx.fill();
+        ctx.fillStyle = '#f5cd8d'; ctx.fillRect(-15 * u, -2 * u, 30 * u, 4 * u);
+        ctx.fillStyle = '#d99a4e'; rr(-15 * u, 3 * u, 30 * u, 6 * u, 3 * u); ctx.fill();
+        ctx.fillStyle = '#fff3d6';
+        ctx.beginPath(); ctx.ellipse(-5 * u, -7 * u, 1.8 * u, 1.1 * u, .5, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(4 * u, -9 * u, 1.8 * u, 1.1 * u, -.4, 0, 7); ctx.fill();
+      } else if (type === 'meat'){
+        if (st8 === 'raw'){
+          ctx.fillStyle = '#d84a4a';
+          ctx.beginPath(); ctx.ellipse(0, 0, 15 * u, 11 * u, -.3, 0, 7); ctx.fill();
+          ctx.fillStyle = '#f0917f';
+          ctx.beginPath(); ctx.ellipse(-3 * u, -2 * u, 6 * u, 3.5 * u, -.3, 0, 7); ctx.fill();
+        } else if (st8 === 'cooked'){
+          ctx.fillStyle = '#8a5426';
+          ctx.beginPath(); ctx.ellipse(0, 0, 15 * u, 11 * u, -.2, 0, 7); ctx.fill();
+          ctx.fillStyle = '#a06a33';
+          ctx.beginPath(); ctx.ellipse(-2 * u, -2 * u, 8 * u, 4.5 * u, -.2, 0, 7); ctx.fill();
+          ctx.strokeStyle = '#5f3a16'; ctx.lineWidth = 1.6 * u;
+          ctx.beginPath(); ctx.moveTo(-8 * u, 3 * u); ctx.lineTo(6 * u, -5 * u); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(-3 * u, 6 * u); ctx.lineTo(10 * u, -2 * u); ctx.stroke();
+        } else { // burnt
+          ctx.fillStyle = '#1d1a17';
+          ctx.beginPath(); ctx.ellipse(0, 0, 15 * u, 11 * u, -.2, 0, 7); ctx.fill();
+          ctx.fillStyle = '#3a332c';
+          ctx.beginPath(); ctx.ellipse(-3 * u, -3 * u, 6 * u, 3 * u, -.2, 0, 7); ctx.fill();
+        }
+      } else if (type === 'lettuce'){
+        if (st8 === 'chopped'){
+          ctx.fillStyle = '#79c94f';
+          var bits = [[-9, 2], [-2, -4], [6, 1], [0, 6], [-6, -6], [9, -5]];
+          for (var i = 0; i < bits.length; i++){ rr((bits[i][0] - 4) * u, (bits[i][1] - 3) * u, 9 * u, 6 * u, 2 * u); ctx.fill(); }
+          ctx.fillStyle = '#a5e284';
+          rr(-4 * u, -1 * u, 8 * u, 5 * u, 2 * u); ctx.fill();
+        } else {
+          ctx.fillStyle = '#79c94f';
+          ctx.beginPath();
+          for (var a = 0; a < 8; a++){
+            var ang = a / 8 * Math.PI * 2;
+            ctx.ellipse(Math.cos(ang) * 8 * u, Math.sin(ang) * 8 * u, 7.5 * u, 7.5 * u, 0, 0, 7);
+          }
+          ctx.fill();
+          ctx.fillStyle = '#a5e284';
+          ctx.beginPath(); ctx.ellipse(0, 0, 8 * u, 8 * u, 0, 0, 7); ctx.fill();
+        }
+      } else if (type === 'tomato'){
+        if (st8 === 'chopped'){
+          ctx.fillStyle = '#e2483a';
+          var ch = [[-9, 0], [0, -5], [8, 1], [-2, 6]];
+          for (var j = 0; j < ch.length; j++){ rr((ch[j][0] - 5) * u, (ch[j][1] - 4) * u, 11 * u, 8 * u, 3 * u); ctx.fill(); }
+          ctx.fillStyle = '#ff8a75';
+          rr(-3 * u, -2 * u, 6 * u, 4 * u, 2 * u); ctx.fill();
+        } else {
+          ctx.fillStyle = '#e2483a';
+          ctx.beginPath(); ctx.ellipse(0, 1 * u, 13 * u, 12 * u, 0, 0, 7); ctx.fill();
+          ctx.fillStyle = '#ff7a63';
+          ctx.beginPath(); ctx.ellipse(-4 * u, -3 * u, 5 * u, 3.5 * u, -.4, 0, 7); ctx.fill();
+          ctx.fillStyle = '#4d9e3f';
+          ctx.beginPath(); ctx.ellipse(0, -10 * u, 5 * u, 2.6 * u, 0, 0, 7); ctx.fill();
+          ctx.fillRect(-1 * u, -13 * u, 2 * u, 4 * u);
+        }
+      }
+      ctx.restore();
+    }
+    function drawPlate(x, y, s, contents){
+      ctx.save(); ctx.translate(x, y);
+      var u = s / 44;
+      ctx.fillStyle = '#fdfdfd';
+      ctx.beginPath(); ctx.ellipse(0, 0, 20 * u, 14 * u, 0, 0, 7); ctx.fill();
+      ctx.strokeStyle = '#c9cdd4'; ctx.lineWidth = 1.6 * u;
+      ctx.beginPath(); ctx.ellipse(0, 0, 15 * u, 10 * u, 0, 0, 7); ctx.stroke();
+      if (contents){
+        for (var i = 0; i < contents.length; i++){
+          var ic = KEY_ICON[contents[i]];
+          if (!ic) continue;
+          var offs = [[0, -1], [-8, 1], [8, 1]];
+          var o = offs[i % 3];
+          drawIngIcon(ic[0], ic[1], o[0] * u, o[1] * u, s * 0.52);
+        }
+      }
+      ctx.restore();
+    }
+    function drawHeld(c){
+      if (!c.holding) return;
+      var hx = c.x + c.dir.x * 24, hy = c.y + c.dir.y * 24 + 4;
+      if (c.holding.kind === 'plate') drawPlate(hx, hy, 40, c.holding.contents);
+      else drawIngIcon(c.holding.type, c.holding.state, hx, hy, 34);
+    }
+    function drawProgress(x, y, w, frac, color){
+      ctx.fillStyle = 'rgba(20,12,6,.65)'; rr(x, y, w, 9, 4.5); ctx.fill();
+      ctx.fillStyle = color;
+      if (frac > 0.005){ rr(x + 1.5, y + 1.5, (w - 3) * Math.min(1, frac), 6, 3); ctx.fill(); }
+    }
+    function drawStation(st){
+      var x = st.x, y = st.y;
+      var targeted = chefs.some(function(c){ return c.target === st; });
+      // counter body
+      if (st.type.indexOf('crate') === 0){
+        ctx.fillStyle = '#8a5a28'; rr(x + 3, y + 6, 74, 70, 7); ctx.fill();
+        ctx.fillStyle = '#a06a35'; rr(x + 3, y + 3, 74, 66, 7); ctx.fill();
+        ctx.strokeStyle = '#6f4517'; ctx.lineWidth = 2.5; rr(x + 8, y + 9, 64, 54, 5); ctx.stroke();
+        var type = st.type.slice(6);
+        drawIngIcon(type, 'raw', x + 40, y + 32, 40);
+        drawIngIcon(type, 'raw', x + 24, y + 40, 30);
+        drawIngIcon(type, 'raw', x + 56, y + 42, 30);
+      } else if (st.type === 'stove'){
+        ctx.fillStyle = '#4b4f57'; rr(x + 2, y + 4, 76, 72, 7); ctx.fill();
+        ctx.fillStyle = '#62676f'; rr(x + 2, y + 2, 76, 68, 7); ctx.fill();
+        // pan
+        ctx.fillStyle = '#23252a';
+        ctx.beginPath(); ctx.ellipse(x + 40, y + 34, 24, 20, 0, 0, 7); ctx.fill();
+        ctx.strokeStyle = '#101114'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.ellipse(x + 40, y + 34, 24, 20, 0, 0, 7); ctx.stroke();
+        ctx.fillStyle = '#101114'; rr(x + 60, y + 30, 15, 7, 3); ctx.fill();
+        if (st.item){
+          if (st.item.state === 'raw'){
+            ctx.fillStyle = 'rgba(255,110,40,.85)';
+            ctx.beginPath(); ctx.ellipse(x + 40, y + 52, 9, 3.5, 0, 0, 7); ctx.fill();
+          }
+          drawIngIcon('meat', st.item.state, x + 40, y + 33, 36);
+        }
+      } else if (st.type === 'sink'){
+        ctx.fillStyle = '#8d99a6'; rr(x + 2, y + 4, 76, 72, 7); ctx.fill();
+        ctx.fillStyle = '#aeb9c4'; rr(x + 2, y + 2, 76, 68, 7); ctx.fill();
+        ctx.fillStyle = '#5e7d95'; rr(x + 12, y + 14, 56, 40, 8); ctx.fill();
+        ctx.fillStyle = '#7fa8c4'; rr(x + 15, y + 17, 50, 34, 7); ctx.fill();
+        ctx.strokeStyle = '#6b7885'; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.arc(x + 40, y + 14, 11, Math.PI, 0); ctx.stroke();
+        if (dirtyPlates > 0){
+          for (var i = 0; i < Math.min(3, dirtyPlates); i++)
+            drawPlate(x + 40, y + 36 - i * 4, 36, null);
+          ctx.fillStyle = '#20303c';
+          ctx.font = '800 12px "Baloo 2", sans-serif'; ctx.textAlign = 'center';
+          ctx.fillText('kotor: ' + dirtyPlates, x + 40, y + 66);
+        }
+      } else if (st.type === 'plates'){
+        ctx.fillStyle = '#b57e42'; rr(x + 2, y + 4, 76, 72, 7); ctx.fill();
+        ctx.fillStyle = '#cf9757'; rr(x + 2, y + 2, 76, 68, 7); ctx.fill();
+        for (var p = 0; p < cleanPlates; p++) drawPlate(x + 40, y + 40 - p * 6, 44, null);
+        if (cleanPlates === 0){
+          ctx.fillStyle = '#5c3a17'; ctx.font = '800 12px "Baloo 2", sans-serif'; ctx.textAlign = 'center';
+          ctx.fillText('habis!', x + 40, y + 44);
+        }
+      } else if (st.type === 'trash'){
+        ctx.fillStyle = '#5f7263'; rr(x + 14, y + 10, 52, 62, 6); ctx.fill();
+        ctx.fillStyle = '#71877a'; rr(x + 10, y + 4, 60, 12, 6); ctx.fill();
+        ctx.fillStyle = '#42544a'; rr(x + 24, y + 26, 32, 5, 2.5); ctx.fill(); rr(x + 24, y + 38, 32, 5, 2.5); ctx.fill(); rr(x + 24, y + 50, 32, 5, 2.5); ctx.fill();
+      } else if (st.type === 'serve'){
+        ctx.fillStyle = '#7a4f22'; rr(x + 1, y + 4, 78, 72, 5); ctx.fill();
+        ctx.fillStyle = '#3f7d4e'; rr(x + 1, y + 2, 78, 62, 5); ctx.fill();
+        ctx.fillStyle = '#ffd23e';
+        ctx.beginPath(); ctx.arc(x + 40, y + 26, 9, Math.PI, 0); ctx.fill();
+        ctx.fillRect(x + 29, y + 26, 22, 3.5);
+        ctx.fillStyle = '#c39a12'; ctx.beginPath(); ctx.arc(x + 40, y + 17, 2.6, 0, 7); ctx.fill();
+      } else if (st.type === 'board'){
+        ctx.fillStyle = '#b57e42'; rr(x + 2, y + 4, 76, 72, 7); ctx.fill();
+        ctx.fillStyle = '#cf9757'; rr(x + 2, y + 2, 76, 68, 7); ctx.fill();
+        ctx.fillStyle = '#e9cf9f'; rr(x + 12, y + 12, 56, 46, 6); ctx.fill();
+        ctx.strokeStyle = '#c8a566'; ctx.lineWidth = 2; rr(x + 12, y + 12, 56, 46, 6); ctx.stroke();
+      } else { // counter
+        ctx.fillStyle = '#a06a35'; rr(x + 2, y + 4, 76, 72, 7); ctx.fill();
+        ctx.fillStyle = '#c08547'; rr(x + 2, y + 2, 76, 68, 7); ctx.fill();
+        ctx.strokeStyle = 'rgba(111,69,23,.5)'; ctx.lineWidth = 2; rr(x + 8, y + 8, 64, 56, 5); ctx.stroke();
+      }
+      // item on surface stations
+      if ((st.type === 'counter' || st.type === 'board') && st.item){
+        if (st.item.kind === 'plate') drawPlate(x + 40, y + 36, 46, st.item.contents);
+        else drawIngIcon(st.item.type, st.item.state, x + 40, y + 34, 38);
+      }
+      // progress bars
+      if (st.type === 'board' && st.progress > 0) drawProgress(x + 8, y - 13, 64, st.progress, '#ffd23e');
+      if (st.type === 'stove' && st.item){
+        if (st.item.state === 'raw') drawProgress(x + 8, y - 13, 64, st.item.t / 8, '#7be495');
+        else if (st.item.state === 'cooked') drawProgress(x + 8, y - 13, 64, st.item.t / 6, '#ff5147');
+      }
+      if (st.type === 'sink' && st.progress > 0) drawProgress(x + 8, y - 13, 64, st.progress, '#7ec8ff');
+      // target highlight
+      if (targeted && state === 'playing'){
+        ctx.strokeStyle = 'rgba(255,210,62,.95)'; ctx.lineWidth = 3.5;
+        rr(x + 1, y + 1, 78, 78, 9); ctx.stroke();
+      }
+      // label
+      if (st.label){
+        ctx.font = '700 12px "Baloo 2", sans-serif'; ctx.textAlign = 'center';
+        var tw = ctx.measureText(st.label).width + 12;
+        ctx.fillStyle = 'rgba(30,18,8,.62)';
+        rr(x + 40 - tw / 2, y + 60, tw, 16, 8); ctx.fill();
+        ctx.fillStyle = '#ffeec4';
+        ctx.fillText(st.label, x + 40, y + 72.5);
+      }
+    }
+    function drawChef(c){
+      var bob = (c.walkPhase !== 0) ? Math.sin(c.walkPhase) * 1.6 : 0;
+      // identity ring + shadow
+      ctx.fillStyle = 'rgba(0,0,0,.22)';
+      ctx.beginPath(); ctx.ellipse(c.x, c.y + 20, 21, 6.5, 0, 0, 7); ctx.fill();
+      ctx.strokeStyle = c.color; ctx.lineWidth = 3.5;
+      ctx.beginPath(); ctx.ellipse(c.x, c.y + 19, 24, 9, 0, 0, 7); ctx.stroke();
+      // body
+      ctx.fillStyle = c.color;
+      rr(c.x - 17, c.y - 4 + bob * .4, 34, 26, 10); ctx.fill();
+      ctx.fillStyle = '#fdfdfd';
+      rr(c.x - 8, c.y - 4 + bob * .4, 16, 26, 6); ctx.fill();
+      ctx.fillStyle = c.color;
+      ctx.fillRect(c.x - 1.5, c.y + 2 + bob * .4, 3, 3); ctx.fillRect(c.x - 1.5, c.y + 9 + bob * .4, 3, 3);
+      // head
+      ctx.fillStyle = '#ffd9b3';
+      ctx.beginPath(); ctx.arc(c.x, c.y - 16 + bob, 15.5, 0, 7); ctx.fill();
+      // hair sides
+      ctx.fillStyle = c.hair;
+      ctx.beginPath(); ctx.ellipse(c.x - 13.5, c.y - 12 + bob, 4.5, 8, .25, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(c.x + 13.5, c.y - 12 + bob, 4.5, 8, -.25, 0, 7); ctx.fill();
+      // bandana band
+      ctx.fillStyle = c.color;
+      rr(c.x - 15.5, c.y - 27 + bob, 31, 7, 3.5); ctx.fill();
+      // chef hat
+      ctx.fillStyle = '#ffffff';
+      rr(c.x - 11, c.y - 40 + bob, 22, 13, 6); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(c.x - 7, c.y - 38 + bob, 7, 6, 0, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(c.x + 7, c.y - 38 + bob, 7, 6, 0, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(c.x, c.y - 41 + bob, 8, 6.5, 0, 0, 7); ctx.fill();
+      // face
+      var ex = c.dir.x * 2.5, ey = c.dir.y * 1.6;
+      ctx.fillStyle = '#33241a';
+      ctx.beginPath(); ctx.arc(c.x - 5.5 + ex, c.y - 15 + bob + ey, 1.9, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.arc(c.x + 5.5 + ex, c.y - 15 + bob + ey, 1.9, 0, 7); ctx.fill();
+      ctx.strokeStyle = '#b06a3b'; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.arc(c.x + ex, c.y - 10.5 + bob + ey, 3.4, .25, Math.PI - .25); ctx.stroke();
+      // name label
+      ctx.font = '800 11px "Baloo 2", sans-serif'; ctx.textAlign = 'center';
+      var tw = ctx.measureText(c.name).width + 12;
+      ctx.fillStyle = c.color;
+      rr(c.x - tw / 2, c.y - 58 + bob, tw, 15, 7.5); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.fillText(c.name, c.x, c.y - 47 + bob);
+      drawHeld(c);
+    }
+    function drawTickets(){
+      if (tickets.length === 0){
+        ctx.fillStyle = 'rgba(10,20,14,.92)'; rr(8, 8, 168, 46, 10); ctx.fill();
+        ctx.strokeStyle = '#f5c542'; ctx.lineWidth = 2; rr(8, 8, 168, 46, 10); ctx.stroke();
+        ctx.fillStyle = '#ffeec4'; ctx.font = '700 13px "Baloo 2", sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('Menunggu pesanan...', 92, 36);
+        return;
+      }
+      for (var i = 0; i < tickets.length; i++){
+        var tk = tickets[i], x = 8 + i * 118, y = 8;
+        var frac = Math.max(0, tk.t / tk.total);
+        ctx.fillStyle = 'rgba(10,20,14,.95)'; rr(x, y, 110, 72, 10); ctx.fill();
+        ctx.strokeStyle = frac < 0.25 ? '#e0492f' : '#f5c542'; ctx.lineWidth = frac < 0.25 ? 3 : 2;
+        rr(x, y, 110, 72, 10); ctx.stroke();
+        ctx.fillStyle = '#ffeec4'; ctx.font = '800 12.5px "Baloo 2", sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(RECIPES[tk.recipe].name, x + 55, y + 17);
+        var parts = RECIPES[tk.recipe].parts;
+        for (var j = 0; j < parts.length; j++){
+          var ic = KEY_ICON[parts[j]];
+          var ix = x + 55 + (j - (parts.length - 1) / 2) * 32;
+          drawIngIcon(ic[0], ic[1], ix, y + 40, 27);
+          if (j < parts.length - 1){
+            ctx.fillStyle = '#8a6f4d'; ctx.font = '800 14px "Baloo 2", sans-serif';
+            ctx.fillText('+', ix + 16, y + 45);
+          }
+        }
+        // timer bar
+        ctx.fillStyle = '#33473a'; rr(x + 7, y + 61, 96, 7, 3.5); ctx.fill();
+        var col = frac > 0.5 ? '#58b13e' : (frac > 0.25 ? '#e8a41c' : '#e0492f');
+        ctx.fillStyle = col;
+        if (frac > 0.01){ rr(x + 7, y + 61, 96 * frac, 7, 3.5); ctx.fill(); }
+      }
+    }
+    function drawHUD(){
+      // timer panel (Kuro Adventure style: dark forest panel + gold border + pixel font)
+      var mm = Math.floor(timeLeft / 60), ss = Math.floor(timeLeft % 60);
+      var tTxt = mm + ':' + (ss < 10 ? '0' : '') + ss;
+      ctx.fillStyle = timeLeft <= 15 ? 'rgba(120,22,14,.95)' : 'rgba(10,20,14,.95)';
+      rr(W / 2 - 62, 8, 124, 46, 10); ctx.fill();
+      ctx.strokeStyle = '#f5c542'; ctx.lineWidth = 2; rr(W / 2 - 62, 8, 124, 46, 10); ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.font = '16px "Press Start 2P", monospace'; ctx.textAlign = 'center';
+      ctx.fillText(tTxt, W / 2, 39);
+      // score panel
+      ctx.fillStyle = 'rgba(10,20,14,.95)'; rr(W - 216, 8, 208, 46, 10); ctx.fill();
+      ctx.strokeStyle = '#f5c542'; rr(W - 216, 8, 208, 46, 10); ctx.stroke();
+      ctx.fillStyle = '#ffd23e'; ctx.font = '13px "Press Start 2P", monospace';
+      ctx.fillText('SKOR ' + score, W - 112, 38);
+      // served/failed mini line
+      ctx.fillStyle = 'rgba(10,20,14,.85)'; rr(W - 216, 60, 208, 24, 8); ctx.fill();
+      ctx.strokeStyle = 'rgba(245,197,66,.55)'; ctx.lineWidth = 1.5; rr(W - 216, 60, 208, 24, 8); ctx.stroke();
+      ctx.fillStyle = '#ffeec4'; ctx.font = '700 13px "Baloo 2", sans-serif';
+      ctx.fillText('Selesai ' + served + '  ·  Gagal ' + failed, W - 112, 77);
+    }
+    function drawMenuScene(){
+      // Code-drawn dusk scene behind the menu: sky, hills, kitchen silhouette, both chefs.
+      var sky = ctx.createLinearGradient(0, 0, 0, H);
+      sky.addColorStop(0, '#1b3a4a'); sky.addColorStop(.45, '#7a4a2b'); sky.addColorStop(.72, '#e08a3c'); sky.addColorStop(1, '#2c4a2e');
+      ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+      // sun + moon
+      ctx.fillStyle = '#ffd873'; ctx.beginPath(); ctx.arc(W * .78, 150, 44, 0, 7); ctx.fill();
+      ctx.fillStyle = 'rgba(255,216,115,.25)'; ctx.beginPath(); ctx.arc(W * .78, 150, 66, 0, 7); ctx.fill();
+      ctx.fillStyle = '#f3e7d3'; ctx.beginPath(); ctx.arc(120, 84, 24, 0, 7); ctx.fill();
+      ctx.fillStyle = '#1b3a4a'; ctx.beginPath(); ctx.arc(132, 78, 21, 0, 7); ctx.fill();
+      // distant hills
+      ctx.fillStyle = '#24402a';
+      ctx.beginPath(); ctx.moveTo(0, 470);
+      ctx.quadraticCurveTo(220, 380, 470, 460); ctx.quadraticCurveTo(720, 530, 950, 440);
+      ctx.quadraticCurveTo(1120, 385, 1280, 450); ctx.lineTo(1280, 720); ctx.lineTo(0, 720); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#182b1c';
+      ctx.beginPath(); ctx.moveTo(0, 540);
+      ctx.quadraticCurveTo(300, 460, 620, 530); ctx.quadraticCurveTo(950, 590, 1280, 510);
+      ctx.lineTo(1280, 720); ctx.lineTo(0, 720); ctx.closePath(); ctx.fill();
+      // pine silhouettes
+      ctx.fillStyle = '#101f13';
+      var pines = [60, 170, 1080, 1190, 960];
+      for (var i = 0; i < pines.length; i++){
+        var px = pines[i], py = 470 + (i % 3) * 22;
+        ctx.beginPath(); ctx.moveTo(px, py - 92); ctx.lineTo(px - 26, py - 30); ctx.lineTo(px - 12, py - 30); ctx.lineTo(px - 32, py + 8); ctx.lineTo(px + 32, py + 8); ctx.lineTo(px + 12, py - 30); ctx.lineTo(px + 26, py - 30); ctx.closePath(); ctx.fill();
+        ctx.fillRect(px - 4, py + 8, 8, 16);
+      }
+      // kitchen silhouette strip (counter + hanging pans) along the bottom
+      ctx.fillStyle = '#0a140e'; ctx.fillRect(0, 606, W, 114);
+      ctx.fillStyle = '#f5c542'; ctx.fillRect(0, 602, W, 4);
+      ctx.strokeStyle = 'rgba(245,197,66,.5)'; ctx.lineWidth = 2;
+      for (var hx = 90; hx < W; hx += 150){
+        ctx.beginPath(); ctx.moveTo(hx, 606); ctx.lineTo(hx, 630); ctx.stroke();
+        ctx.fillStyle = '#0a140e'; ctx.beginPath(); ctx.arc(hx, 646, 15, 0, 7); ctx.fill();
+        ctx.strokeStyle = 'rgba(245,197,66,.5)'; ctx.beginPath(); ctx.arc(hx, 646, 15, 0, 7); ctx.stroke();
+      }
+      // ground shadows + both chefs flanking the menu panel (visible left & right of it)
+      ctx.fillStyle = 'rgba(0,0,0,.3)';
+      ctx.beginPath(); ctx.ellipse(168, 596, 92, 20, 0, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(W - 168, 596, 92, 20, 0, 0, 7); ctx.fill();
+      if (chefs.length >= 2){
+        var c0 = chefs[0], c1 = chefs[1];
+        var s0 = { x: c0.x, y: c0.y, dir: c0.dir, wp: c0.walkPhase, hold: c0.holding };
+        var s1 = { x: c1.x, y: c1.y, dir: c1.dir, wp: c1.walkPhase, hold: c1.holding };
+        c0.x = 168; c0.y = 540; c0.dir = { x: .35, y: 1 }; c0.walkPhase = 0; c0.holding = { kind: 'ing', type: 'tomato', state: 'raw', t: 0 };
+        c1.x = W - 168; c1.y = 540; c1.dir = { x: -.35, y: 1 }; c1.walkPhase = 0; c1.holding = { kind: 'plate', contents: ['bun', 'patty'] };
+        ctx.save(); ctx.translate(168, 540); ctx.scale(1.8, 1.8); ctx.translate(-168, -540); drawChef(c0); ctx.restore();
+        ctx.save(); ctx.translate(W - 168, 540); ctx.scale(1.8, 1.8); ctx.translate(-(W - 168), -540); drawChef(c1); ctx.restore();
+        c0.x = s0.x; c0.y = s0.y; c0.dir = s0.dir; c0.walkPhase = s0.wp; c0.holding = s0.hold;
+        c1.x = s1.x; c1.y = s1.y; c1.dir = s1.dir; c1.walkPhase = s1.wp; c1.holding = s1.hold;
+      }
+      // floating ingredient sparkles
+      drawIngIcon('tomato', 'raw', 240, 300 + Math.sin(perfNow * .0012) * 8, 44);
+      drawIngIcon('lettuce', 'raw', 1030, 280 + Math.cos(perfNow * .001) * 8, 44);
+      drawIngIcon('bun', 'raw', 330, 170 + Math.cos(perfNow * .0014) * 6, 40);
+      drawIngIcon('meat', 'cooked', 950, 150 + Math.sin(perfNow * .0011) * 6, 40);
+    }
+    function drawCountdown(){
+      var n = Math.ceil(cdT);
+      if (n <= 0) return;
+      ctx.fillStyle = 'rgba(6,14,9,.45)'; ctx.fillRect(0, 0, W, H);
+      ctx.font = '64px "Press Start 2P", monospace'; ctx.textAlign = 'center';
+      ctx.lineWidth = 10; ctx.strokeStyle = 'rgba(10,20,14,.9)';
+      ctx.strokeText(String(n), W / 2, H / 2 + 22);
+      ctx.fillStyle = '#ffd23e';
+      ctx.fillText(String(n), W / 2, H / 2 + 22);
+      ctx.font = '13px "Press Start 2P", monospace';
+      ctx.fillStyle = '#ffeec4';
+      ctx.fillText('BERSIAP...', W / 2, H / 2 + 66);
+    }
+    function draw(){
+      if (state === 'title'){ drawMenuScene(); return; }
+      // floor tiles
+      for (var gy = 0; gy < 18; gy++){
+        for (var gx = 0; gx < 32; gx++){
+          ctx.fillStyle = (gx + gy) % 2 === 0 ? '#f0dcba' : '#e8d2ab';
+          ctx.fillRect(gx * 40, gy * 40, 40, 40);
+        }
+      }
+      ctx.strokeStyle = '#c8a566'; ctx.lineWidth = 6; ctx.strokeRect(0, 0, W, H);
+      for (var i = 0; i < stations.length; i++) drawStation(stations[i]);
+      // chefs sorted by y for simple depth
+      var sorted = chefs.slice().sort(function(p, q){ return p.y - q.y; });
+      for (var j = 0; j < sorted.length; j++) drawChef(sorted[j]);
+      // particles
+      for (var p = 0; p < particles.length; p++){
+        var pt = particles[p];
+        ctx.globalAlpha = Math.max(0, pt.life / pt.max);
+        ctx.fillStyle = pt.color;
+        ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.size, 0, 7); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      // floaters
+      ctx.textAlign = 'center';
+      for (var f = 0; f < floaters.length; f++){
+        var fl = floaters[f];
+        ctx.globalAlpha = Math.min(1, fl.life * 1.6);
+        ctx.font = '800 16px "Baloo 2", sans-serif';
+        ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(30,18,8,.8)';
+        ctx.strokeText(fl.txt, fl.x, fl.y);
+        ctx.fillStyle = fl.color;
+        ctx.fillText(fl.txt, fl.x, fl.y);
+      }
+      ctx.globalAlpha = 1;
+      drawTickets(); drawHUD();
+      if (state === 'countdown') drawCountdown();
+    }
+
+    /* ---------------- Flow ---------------- */
+    var titleEl = document.getElementById('titleScreen');
+    var howEl = document.getElementById('howScreen');
+    var mpEl = document.getElementById('mpScreen');
+    var dcEl = document.getElementById('dcScreen');
+    var pauseEl = document.getElementById('pauseScreen');
+    var resultEl = document.getElementById('resultScreen');
+    var mpBarEl = document.getElementById('mpBar');
+    var mpBarText = document.getElementById('mpBarText');
+    function hideAllOverlays(){
+      titleEl.classList.add('hidden'); howEl.classList.add('hidden');
+      mpEl.classList.add('hidden'); dcEl.classList.add('hidden');
+      pauseEl.classList.add('hidden'); resultEl.classList.add('hidden');
+    }
+    function showMenu(){
+      hideAllOverlays();
+      state = 'title';
+      titleEl.classList.remove('hidden');
+      mpBarEl.classList.remove('on');
+      updateTouchVisibility();
+    }
+    function startLevel(){
+      initAudio(); sfx('click');
+      if (mp.mode !== 'local') mpCleanup(false);
+      resetGame();
+      state = 'playing';
+      hideAllOverlays();
+      updateTouchVisibility();
+    }
+    function startOnlineGame(){
+      // Runs on BOTH sides: host sends {t:'start'}, both reset + count down together.
+      initAudio();
+      resetGame();
+      guestInput = { v: { x: 0, y: 0 }, interact: false, dash: false };
+      snapTargets = null;
+      cdT = 3.2;
+      state = 'countdown';
+      hideAllOverlays();
+      mpBarEl.classList.add('on');
+      mpBarText.textContent = mp.mode === 'host' ? 'Online · Kamu RAKA · Room ' + mp.code : 'Online · Kamu GORA · Room ' + mp.code;
+      updateTouchVisibility();
+    }
+    function pauseGame(){
+      if (state !== 'playing') return;
+      state = 'paused'; pauseEl.classList.remove('hidden'); sfx('click');
+    }
+    function resumeGame(){
+      if (state !== 'paused') return;
+      state = 'playing'; pauseEl.classList.add('hidden'); initAudio(); sfx('click');
+    }
+    function showResults(){
+      var stars = score >= 800 ? 3 : (score >= 550 ? 2 : (score >= 300 ? 1 : 0));
+      var sh = '';
+      for (var i = 0; i < 3; i++) sh += '<span class="' + (i < stars ? '' : 'off') + '">&#9733;</span>';
+      document.getElementById('resultStars').innerHTML = sh;
+      document.getElementById('resultScore').textContent = score;
+      document.getElementById('resultServed').textContent = served;
+      document.getElementById('resultFailed').textContent = failed;
+      document.getElementById('resultNote').textContent =
+        stars === 3 ? 'Luar biasa! Dapur ini layak dapat bintang Michelin!' :
+        stars === 2 ? 'Kerja bagus! Sedikit lagi menuju dapur legendaris.' :
+        stars === 1 ? 'Lumayan! Latihan terus, atur pembagian tugas biar lebih cepat.' :
+                      'Dapur masih berantakan — coba bagi tugas: satu motong, satu masak & sajikan!';
+      var isGuest = mp.mode === 'guest';
+      document.getElementById('btnAgain').style.display = isGuest ? 'none' : '';
+      document.getElementById('guestWaitNote').style.display = isGuest ? '' : 'none';
+      document.getElementById('btnResultMenu').style.display = mp.mode === 'local' ? 'none' : '';
+      resultEl.classList.remove('hidden');
+      updateTouchVisibility();
+    }
+    function endLevel(){
+      state = 'results';
+      showResults();
+      sfx('serve');
+    }
+    document.getElementById('btnStart').addEventListener('click', function(){ mp.mode = 'local'; startLevel(); });
+    document.getElementById('btnHow').addEventListener('click', function(){ initAudio(); sfx('click'); titleEl.classList.add('hidden'); howEl.classList.remove('hidden'); });
+    document.getElementById('btnHowBack').addEventListener('click', function(){ sfx('click'); howEl.classList.add('hidden'); titleEl.classList.remove('hidden'); });
+    document.getElementById('btnOnline').addEventListener('click', function(){
+      initAudio(); sfx('click');
+      titleEl.classList.add('hidden'); mpEl.classList.remove('hidden');
+      if (typeof Peer === 'undefined')
+        mpSetError('Multiplayer tidak bisa dimuat (library PeerJS tidak terjangkau). Cek koneksi internetmu, atau main mode lokal dulu ya.');
+    });
+    document.getElementById('btnAgain').addEventListener('click', function(){
+      if (mp.mode === 'host'){ if (mp.conn && mp.conn.open) mp.conn.send({ t: 'start' }); startOnlineGame(); }
+      else startLevel();
+    });
+    document.getElementById('btnResultMenu').addEventListener('click', function(){ mpCleanup(true); showMenu(); });
+    document.getElementById('btnResume').addEventListener('click', resumeGame);
+    document.getElementById('btnRestartFromPause').addEventListener('click', startLevel);
+    document.getElementById('btnDisconnect').addEventListener('click', function(){ mpCleanup(true); showMenu(); });
+    document.getElementById('btnDcMenu').addEventListener('click', function(){ mpCleanup(true); showMenu(); });
+
+    /* ---------------- Multiplayer wiring ---------------- */
+    var hostStatusEl = document.getElementById('hostStatus');
+    var guestStatusEl = document.getElementById('guestStatus');
+    var mpErrorEl = document.getElementById('mpError');
+    var hostCodeEl = document.getElementById('hostCode');
+    var btnHostStart = document.getElementById('btnHostStart');
+    var btnCreateRoom = document.getElementById('btnCreateRoom');
+    var btnJoinRoom = document.getElementById('btnJoinRoom');
+    var joinCodeEl = document.getElementById('joinCode');
+    function mpSetError(msg){ mpErrorEl.textContent = msg || ''; }
+    function mpSetStatus(el, msg, isErr){ el.textContent = msg || ''; el.classList.toggle('err', !!isErr); }
+    function makeRoomCode(){
+      var chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789', out = '';
+      for (var i = 0; i < 5; i++) out += chars[(Math.random() * chars.length) | 0];
+      return out;
+    }
+    function mpCleanup(resetMode){
+      try { if (mp.conn) mp.conn.close(); } catch (e) {}
+      try { if (mp.peer) mp.peer.destroy(); } catch (e) {}
+      mp.conn = null; mp.peer = null; mp.guestReady = false; mp.pendingEvents = [];
+      guestInput = { v: { x: 0, y: 0 }, interact: false, dash: false };
+      snapTargets = null;
+      if (resetMode) mp.mode = 'local';
+      btnHostStart.disabled = true;
+      mpBarEl.classList.remove('on');
+    }
+    function mpDisconnected(msg){
+      if (mp.mode === 'local') return;
+      var wasInGame = state === 'playing' || state === 'countdown' || state === 'results';
+      mpCleanup(true);
+      if (wasInGame){
+        state = 'paused';
+        hideAllOverlays();
+        document.getElementById('dcText').textContent = msg || 'Koneksi ke pemain lain terputus. Game dijeda.';
+        dcEl.classList.remove('hidden');
+        updateTouchVisibility();
+      } else {
+        showMenu();
+        titleEl.classList.add('hidden'); mpEl.classList.remove('hidden');
+        mpSetError(msg || 'Koneksi terputus.');
+      }
+    }
+    function hostWireConn(conn){
+      mp.conn = conn;
+      conn.on('open', function(){
+        mp.guestReady = true;
+        mpSetStatus(hostStatusEl, 'Pemain 2 terhubung! Tekan MULAI untuk masak bareng.');
+        btnHostStart.disabled = false;
+        btnHostStart.style.display = '';
+        sendSnapshot(); // let the guest render the kitchen behind its waiting note
+      });
+      conn.on('data', function(data){
+        if (!data || typeof data !== 'object') return;
+        if (data.t === 'input'){
+          guestInput.v.x = +data.x || 0; guestInput.v.y = +data.y || 0;
+          guestInput.interact = !!data.i; guestInput.dash = !!data.d;
+        }
+      });
+      conn.on('close', function(){ mpDisconnected('Koneksi ke tamu terputus. Game dijeda.'); });
+      conn.on('error', function(){ mpDisconnected('Koneksi ke tamu bermasalah. Game dijeda.'); });
+    }
+    function createRoom(){
+      mpSetError('');
+      if (typeof Peer === 'undefined'){ mpSetError('PeerJS gagal dimuat — multiplayer tidak tersedia. Cek koneksi internet, atau main mode lokal dulu.'); return; }
+      mpCleanup(true);
+      mp.mode = 'host';
+      mp.code = makeRoomCode();
+      btnCreateRoom.disabled = true;
+      mpSetStatus(hostStatusEl, 'Membuat room...');
+      try { mp.peer = new Peer(MP_PREFIX + mp.code.toLowerCase()); }
+      catch (e) { mpSetStatus(hostStatusEl, 'Gagal membuat room.', true); btnCreateRoom.disabled = false; return; }
+      var opened = false;
+      mp.peer.on('open', function(){
+        opened = true;
+        btnCreateRoom.disabled = false;
+        hostCodeEl.style.display = '';
+        hostCodeEl.textContent = mp.code;
+        btnHostStart.style.display = '';
+        btnHostStart.disabled = true;
+        mpSetStatus(hostStatusEl, 'Menunggu pemain 2… bagikan kode di atas ke temanmu.');
+      });
+      mp.peer.on('connection', function(conn){
+        if (mp.conn && mp.conn.open){ try { conn.close(); } catch (e) {} return; } // one guest only
+        hostWireConn(conn);
+      });
+      mp.peer.on('error', function(err){
+        btnCreateRoom.disabled = false;
+        if (err && err.type === 'unavailable-id'){
+          // Code collision: silently retry with a fresh code.
+          try { mp.peer.destroy(); } catch (e) {}
+          mp.peer = null; createRoom(); return;
+        }
+        if (!opened) mpSetStatus(hostStatusEl, 'Gagal membuat room (' + (err && err.type ? err.type : 'jaringan') + '). Coba lagi.', true);
+      });
+      mp.peer.on('disconnected', function(){ try { mp.peer.reconnect(); } catch (e) {} });
+    }
+    function joinRoom(){
+      mpSetError('');
+      var code = (joinCodeEl.value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+      joinCodeEl.value = code;
+      if (code.length !== 5){ mpSetStatus(guestStatusEl, 'Kode room harus 5 karakter (huruf + angka).', true); return; }
+      if (typeof Peer === 'undefined'){ mpSetError('PeerJS gagal dimuat — multiplayer tidak tersedia. Cek koneksi internet, atau main mode lokal dulu.'); return; }
+      mpCleanup(true);
+      mp.mode = 'guest';
+      mp.code = code;
+      btnJoinRoom.disabled = true;
+      mpSetStatus(guestStatusEl, 'Menghubungkan ke room ' + code + '…');
+      try { mp.peer = new Peer(); }
+      catch (e) { mpSetStatus(guestStatusEl, 'Gagal memulai koneksi.', true); btnJoinRoom.disabled = false; return; }
+      var settled = false;
+      mp.peer.on('open', function(){
+        var conn = mp.peer.connect(MP_PREFIX + code.toLowerCase(), { reliable: true });
+        mp.conn = conn;
+        conn.on('open', function(){
+          settled = true;
+          btnJoinRoom.disabled = false;
+          mpSetStatus(guestStatusEl, 'Terhubung! Kamu jadi GORA. Menunggu host menekan MULAI…');
+        });
+        conn.on('data', function(data){
+          if (!data || typeof data !== 'object') return;
+          if (data.t === 'start') startOnlineGame();
+          else if (data.t === 'snap') applySnapshot(data);
+        });
+        conn.on('close', function(){ mpDisconnected('Koneksi ke host terputus. Game dijeda.'); });
+        conn.on('error', function(){ mpDisconnected('Koneksi ke host bermasalah. Game dijeda.'); });
+      });
+      mp.peer.on('error', function(err){
+        btnJoinRoom.disabled = false;
+        if (settled) return;
+        if (err && err.type === 'peer-unavailable')
+          mpSetStatus(guestStatusEl, 'Kode room tidak ditemukan. Cek lagi kodenya — pastikan host sudah membuat room.', true);
+        else
+          mpSetStatus(guestStatusEl, 'Gagal terhubung (' + (err && err.type ? err.type : 'jaringan') + '). Coba lagi.', true);
+      });
+    }
+    btnCreateRoom.addEventListener('click', createRoom);
+    btnJoinRoom.addEventListener('click', joinRoom);
+    joinCodeEl.addEventListener('keydown', function(e){ if (e.key === 'Enter') joinRoom(); e.stopPropagation(); });
+    joinCodeEl.addEventListener('keyup', function(e){ e.stopPropagation(); });
+    btnHostStart.addEventListener('click', function(){
+      if (mp.mode !== 'host' || !mp.guestReady) return;
+      if (mp.conn && mp.conn.open) mp.conn.send({ t: 'start' });
+      startOnlineGame();
+    });
+    document.getElementById('btnMpBack').addEventListener('click', function(){ mpCleanup(true); showMenu(); });
+
+    /* -------- Host snapshot broadcast / guest apply -------- */
+    function buildSnapshot(){
+      var sts = [];
+      for (var i = 0; i < stations.length; i++)
+        sts.push({ item: stations[i].item, progress: stations[i].progress });
+      var cfs = [];
+      for (var j = 0; j < chefs.length; j++){
+        var c = chefs[j];
+        cfs.push({ x: Math.round(c.x), y: Math.round(c.y), dx: c.dir.x, dy: c.dir.y,
+                   holding: c.holding, wp: c.walkPhase, dashT: c.dashT > 0 ? 1 : 0 });
+      }
+      var ev = mp.pendingEvents; mp.pendingEvents = [];
+      return { t: 'snap', gs: state, cd: cdT, timeLeft: timeLeft, score: score,
+               served: served, failed: failed, clean: cleanPlates, dirty: dirtyPlates,
+               tickets: tickets, stations: sts, chefs: cfs, ev: ev };
+    }
+    function sendSnapshot(){
+      if (mp.mode === 'host' && mp.conn && mp.conn.open){
+        try { mp.conn.send(buildSnapshot()); } catch (e) {}
+      }
+    }
+    function applySnapshot(s){
+      if (mp.mode !== 'guest') return;
+      score = s.score; served = s.served; failed = s.failed;
+      timeLeft = s.timeLeft; cleanPlates = s.clean; dirtyPlates = s.dirty;
+      cdT = s.cd || 0;
+      tickets = s.tickets || [];
+      if (s.stations && stations.length === s.stations.length){
+        for (var i = 0; i < stations.length; i++){
+          stations[i].item = s.stations[i].item;
+          stations[i].progress = s.stations[i].progress || 0;
+        }
+      }
+      if (s.chefs){
+        snapTargets = s.chefs;
+        if (!chefs.length) resetGame();
+        for (var j = 0; j < Math.min(2, s.chefs.length); j++){
+          var sc = s.chefs[j], c = chefs[j];
+          if (!c) continue;
+          if (state !== 'playing' && state !== 'countdown'){ c.x = sc.x; c.y = sc.y; }
+          c.dir = { x: sc.dx, y: sc.dy };
+          c.holding = sc.holding;
+          c.walkPhase = sc.wp || 0;
+          c.dashT = sc.dashT ? .1 : 0;
+          c.target = null;
+        }
+      }
+      if (s.ev) for (var k = 0; k < s.ev.length; k++) sfx(s.ev[k]);
+      // Mirror the host's game phase.
+      if (s.gs === 'playing' && state !== 'playing'){ state = 'playing'; hideAllOverlays(); mpBarEl.classList.add('on'); updateTouchVisibility(); }
+      else if (s.gs === 'countdown' && state !== 'countdown'){ state = 'countdown'; hideAllOverlays(); mpBarEl.classList.add('on'); }
+      else if (s.gs === 'results' && state !== 'results'){ state = 'results'; showResults(); }
+    }
+    /* -------- Guest input streaming -------- */
+    function readLocalInput(){
+      var v = { x: 0, y: 0 };
+      if (keys.KeyA) v.x -= 1; if (keys.KeyD) v.x += 1;
+      if (keys.KeyW) v.y -= 1; if (keys.KeyS) v.y += 1;
+      if (Math.abs(joyVec.x) > 0.12 || Math.abs(joyVec.y) > 0.12){ v.x = joyVec.x; v.y = joyVec.y; }
+      var len = Math.hypot(v.x, v.y);
+      if (len > 1){ v.x /= len; v.y /= len; }
+      return { x: Math.round(v.x * 100) / 100, y: Math.round(v.y * 100) / 100,
+               i: !!keys.KeyE || touchInteract, d: !!keys.ShiftLeft || !!keys.ShiftRight || touchDashEdge };
+    }
+    function guestSendInput(force){
+      if (mp.mode !== 'guest' || !mp.conn || !mp.conn.open) return;
+      var inp = readLocalInput();
+      var js = JSON.stringify(inp);
+      if (force || js !== mp.lastInputJson){
+        mp.lastInputJson = js;
+        try { mp.conn.send({ t: 'input', x: inp.x, y: inp.y, i: inp.i, d: inp.d }); } catch (e) {}
+      }
+    }
+
+    /* ---------------- Touch controls ---------------- */
+    var isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+    var touchEl = document.getElementById('touchControls');
+    function updateTouchVisibility(){
+      touchEl.classList.toggle('on', isTouch && (state === 'playing' || state === 'countdown'));
+    }
+    var joyBase = document.getElementById('joyBase'), joyStick = document.getElementById('joyStick');
+    var joyId = null;
+    function joyMove(e){
+      var rect = joyBase.getBoundingClientRect();
+      var cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+      var dx = e.clientX - cx, dy = e.clientY - cy;
+      var max = rect.width / 2 - 8;
+      var d = Math.hypot(dx, dy);
+      if (d > max){ dx = dx / d * max; dy = dy / d * max; }
+      joyStick.style.transform = 'translate(calc(-50% + ' + dx + 'px), calc(-50% + ' + dy + 'px))';
+      joyVec.x = dx / max; joyVec.y = dy / max;
+    }
+    joyBase.addEventListener('pointerdown', function(e){ joyId = e.pointerId; joyBase.setPointerCapture(e.pointerId); joyMove(e); });
+    joyBase.addEventListener('pointermove', function(e){ if (e.pointerId === joyId) joyMove(e); });
+    function joyEnd(e){
+      if (e.pointerId !== joyId) return;
+      joyId = null; joyVec.x = 0; joyVec.y = 0;
+      joyStick.style.transform = 'translate(-50%,-50%)';
+    }
+    joyBase.addEventListener('pointerup', joyEnd);
+    joyBase.addEventListener('pointercancel', joyEnd);
+    var btnI = document.getElementById('btnTouchInteract');
+    btnI.addEventListener('pointerdown', function(e){ e.preventDefault(); touchInteract = true; initAudio(); });
+    btnI.addEventListener('pointerup', function(){ touchInteract = false; });
+    btnI.addEventListener('pointerleave', function(){ touchInteract = false; });
+    btnI.addEventListener('pointercancel', function(){ touchInteract = false; });
+    var btnD = document.getElementById('btnTouchDash');
+    btnD.addEventListener('pointerdown', function(e){ e.preventDefault(); touchDashEdge = true; initAudio(); });
+
+    /* ---------------- Rotate hint ---------------- */
+    var rotateEl = document.getElementById('rotateHint');
+    var wasPlayingBeforeRotate = false;
+    function checkOrientation(){
+      var portrait = window.innerHeight > window.innerWidth;
+      var show = isTouch && portrait && (state === 'playing' || state === 'paused' || state === 'title');
+      rotateEl.classList.toggle('hidden', !show);
+      if (show && state === 'playing'){ wasPlayingBeforeRotate = true; state = 'paused'; }
+      else if (!show && wasPlayingBeforeRotate && state === 'paused' && pauseEl.classList.contains('hidden')){
+        state = 'playing'; wasPlayingBeforeRotate = false;
+      } else if (!show) wasPlayingBeforeRotate = false;
+    }
+    window.addEventListener('resize', checkOrientation);
+    window.addEventListener('orientationchange', checkOrientation);
+
+    /* ---------------- Main loop ---------------- */
+    resetGame();
+    checkOrientation();
+    var lastTs = 0, perfNow = 0;
+    function loop(ts){
+      requestAnimationFrame(loop);
+      perfNow = ts || 0;
+      var dt = Math.min(0.033, (ts - lastTs) / 1000 || 0);
+      lastTs = ts;
+      if (state === 'countdown'){
+        cdT -= dt;
+        if (mp.mode !== 'guest' && cdT <= 0){ cdT = 0; state = 'playing'; updateTouchVisibility(); }
+      } else if (state === 'playing' && mp.mode !== 'guest'){
+        update(dt); // host + local run the simulation; guests never simulate
+      }
+      // Host: broadcast full snapshots at ~12 Hz.
+      if (mp.mode === 'host' && mp.conn && mp.conn.open){
+        mp.snapT += dt;
+        if (mp.snapT >= 0.083){ mp.snapT = 0; sendSnapshot(); }
+      }
+      // Guest: stream input on change + 10 Hz heartbeat, interpolate chef positions.
+      if (mp.mode === 'guest'){
+        guestSendInput(false);
+        mp.inputT += dt;
+        if (mp.inputT >= 0.1){ mp.inputT = 0; guestSendInput(true); }
+        if (snapTargets && (state === 'playing' || state === 'countdown')){
+          var k = 1 - Math.exp(-dt * 14);
+          for (var gi = 0; gi < Math.min(2, snapTargets.length); gi++){
+            if (!chefs[gi]) continue;
+            chefs[gi].x += (snapTargets[gi].x - chefs[gi].x) * k;
+            chefs[gi].y += (snapTargets[gi].y - chefs[gi].y) * k;
+          }
+        }
+      }
+      touchDashEdge = false;
+      draw();
+    }
+    requestAnimationFrame(loop);
+  </script>
+  </body>
+</html>
