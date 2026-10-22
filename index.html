@@ -176,18 +176,23 @@
         font-family:inherit; font-weight:800; font-size:12.5px; cursor:pointer;
         background:transparent; color:var(--accent); border:2px solid var(--accent); border-radius:8px; padding:5px 12px;
       }
-      /* Online bar relocated into the right touch pad (phone landscape):
-         stacked & compact so it never covers the kitchen's bottom row. */
-      #mpBar.in-pad{
-        position:static; transform:none; flex-direction:column; gap:4px;
-        padding:6px 4px; font-size:11.5px; line-height:1.3; max-width:100%; text-align:center;
+      /* Online bar on phones: a slim horizontal CHIP in a strip above the
+         play row (the top HUD bar) — never inside the right action pad, so
+         the pad stays a pure gamepad cluster + top-corner pause. The strip
+         only takes space while an online game is actually running. */
+      #topStrip{ display:none; width:100%; justify-content:center; margin-bottom:6px; }
+      body.touch-layout #topStrip:has(> #mpBar.on){ display:flex; }
+      #mpBar.in-strip{
+        position:static; transform:none; flex-direction:row; gap:8px;
+        padding:4px 8px 4px 12px; font-size:11.5px; line-height:1.25; max-width:98%; text-align:center;
+        border-radius:999px; box-sizing:border-box;
       }
-      #mpBar.in-pad #mpPlayers{ flex-wrap:wrap; justify-content:center; gap:5px; }
-      #mpBar.in-pad #mpPlayers .pchip{ font-size:11px; }
-      #mpBar.in-pad button{ font-size:11px; padding:3px 9px; }
+      #mpBar.in-strip #mpPlayers{ flex-wrap:nowrap; gap:6px; }
+      #mpBar.in-strip #mpPlayers .pchip{ font-size:11px; }
+      #mpBar.in-strip button{ font-size:11px; padding:3px 9px; }
       #btnPauseTouch{
         display:none; align-items:center; justify-content:center;
-        width:44px; height:44px; border-radius:50%; flex:none;
+        width:48px; height:48px; border-radius:50%; flex:none;
         background:rgba(10,20,14,.92); border:2px solid var(--accent);
         color:var(--gold); font-size:16px; font-weight:800; cursor:pointer;
         box-shadow:0 6px 16px rgba(0,0,0,.5);
@@ -234,11 +239,16 @@
       .play-row .stage{ flex:none; }
       body.touch-layout{ height:100dvh; overflow:hidden; box-sizing:border-box; }
       body.touch-layout .legend{ display:none; }
-      .side-pad{ display:none; flex-direction:column; align-items:center; justify-content:center; gap:8px; flex:none; }
+      .side-pad{ display:none; flex-direction:column; align-items:center; justify-content:center; gap:8px; flex:none; align-self:stretch; }
       body.touch-layout .play-row.controls-on .side-pad{ display:flex; }
-      .side-pad .pad-row{ display:flex; gap:10px; }
-      #padLeft{ width:122px; }
-      #padRight{ width:138px; }
+      .side-pad .pad-row{ display:flex; gap:14px; }
+      #padLeft{ width:122px; justify-content:flex-end; }
+      /* Right pad: pause + online chip pinned to the TOP (level with the
+         HUD bar, far from the thumbs), action cluster pinned to the
+         BOTTOM in a gamepad arc. Nothing tappable sits between them. */
+      #padRight{ width:150px; justify-content:space-between; }
+      .pad-top{ display:flex; flex-direction:column; align-items:flex-end; gap:8px; width:100%; }
+      .pad-cluster{ display:flex; flex-direction:column; align-items:flex-end; gap:14px; }
       #joyBase{
         pointer-events:auto; position:relative; width:118px; height:118px; border-radius:50%;
         background:rgba(255,255,255,.14); border:2px solid rgba(255,255,255,.35);
@@ -255,9 +265,9 @@
         border:2px solid rgba(255,255,255,.4); border-radius:50%;
         touch-action:none; user-select:none; -webkit-user-select:none;
       }
-      #btnTouchInteract{ width:86px; height:86px; font-size:13px; background:rgba(214,69,65,.82); }
-      #btnTouchDash{ width:62px; height:62px; font-size:12px; background:rgba(91,127,166,.82); }
-      #btnTouchSwap{ width:62px; height:62px; font-size:11px; background:rgba(47,158,79,.85); }
+      #btnTouchInteract{ width:96px; height:96px; font-size:13.5px; background:rgba(214,69,65,.82); }
+      #btnTouchDash{ width:68px; height:68px; font-size:12px; background:rgba(91,127,166,.82); }
+      #btnTouchSwap{ width:68px; height:68px; font-size:11px; background:rgba(47,158,79,.85); }
       .tbtn:active{ filter:brightness(1.25); }
       /* Phone landscape: whole stage fits the REAL visible viewport
          (dvh + safe-area), never under browser chrome — no page scroll. */
@@ -302,6 +312,9 @@
     </style>
   </head>
   <body>
+    <!-- Phone landscape: the online bar lives here as a slim chip in the
+         top HUD strip (JS relocates it); hidden unless an online game runs. -->
+    <div id="topStrip"></div>
     <div class="play-row" id="playRow">
       <!-- Touch controls live OUTSIDE the stage, in left/right pads, so no
            button ever covers a kitchen station. JS shows the pads only in
@@ -314,7 +327,7 @@
       <div class="stage" id="stage">
       <canvas id="game" width="1280" height="720"></canvas>
 
-      <!-- Multiplayer status bar (in-game; JS moves it into the right pad on phones) -->
+      <!-- Multiplayer status bar (in-game; JS moves it into the top strip on phones) -->
       <div id="mpBar">
         <span class="dot-live"></span>
         <span id="mpBarText">Online</span>
@@ -354,10 +367,10 @@
               <span class="keys">AMBIL / TARUH</span>: interaksi &mdash; tahan untuk memotong &amp; mencuci<br/>
               <span class="keys">DASH</span>: lari cepat<br/>
               <span class="keys">GANTI KOKI</span> (solo): tukar koki yang dikendalikan<br/>
-              Tombol &#10074;&#10074; di kolom kanan layar: jeda
+              Tombol &#10074;&#10074; di pojok kanan atas layar: jeda
             </div>
           </div>
-          <p style="margin-top:10px;"><b>SOLO:</b> dapurnya versi kompak &mdash; lebih kecil dan simple, semua stasiun berdekatan. Kamu mengendalikan satu koki (bertanda KAMU); koki satunya jadi partner yang diam menunggu — tekan <span class="keys">Tab</span>/<span class="keys">C</span> untuk bertukar kendali kapan saja. <b>MULTIPLAYER ONLINE:</b> dapur besar untuk maksimal 3 pemain (host = Raka, tamu = Gora &amp; Mika), tiap pemain memakai kontrol utama di perangkatnya sendiri; jeda berlaku bersama untuk semua pemain. Di HP: joystick + tombol di kolom kiri/kanan layar, jeda lewat tombol &#10074;&#10074; di kolom kanan.</p>
+          <p style="margin-top:10px;"><b>SOLO:</b> dapurnya versi kompak &mdash; lebih kecil dan simple, semua stasiun berdekatan. Kamu mengendalikan satu koki (bertanda KAMU); koki satunya jadi partner yang diam menunggu — tekan <span class="keys">Tab</span>/<span class="keys">C</span> untuk bertukar kendali kapan saja. <b>MULTIPLAYER ONLINE:</b> dapur besar untuk maksimal 3 pemain (host = Raka, tamu = Gora &amp; Mika), tiap pemain memakai kontrol utama di perangkatnya sendiri; jeda berlaku bersama untuk semua pemain. Di HP: joystick di kolom kiri, tombol aksi di kanan bawah, jeda lewat tombol &#10074;&#10074; di pojok kanan atas layar.</p>
           <button class="btn" id="btnHowBack" type="button">KEMBALI</button>
         </div>
       </div>
@@ -490,12 +503,22 @@
       </div><!-- /stage -->
 
       <div class="side-pad" id="padRight">
-        <button class="tbtn" id="btnTouchInteract" type="button">AMBIL /<br/>TARUH</button>
-        <div class="pad-row">
-          <button class="tbtn" id="btnTouchDash" type="button">DASH</button>
-          <button class="tbtn" id="btnTouchSwap" type="button">GANTI<br/>KOKI</button>
+        <!-- Top group: pause + online chip, level with the HUD bar and far
+             from the right thumb's action cluster below. -->
+        <div class="pad-top" id="padTop">
+          <button id="btnPauseTouch" type="button" aria-label="Jeda">&#10074;&#10074;</button>
         </div>
-        <button id="btnPauseTouch" type="button" aria-label="Jeda">&#10074;&#10074;</button>
+        <!-- Bottom group: gamepad-style action cluster only. AMBIL/TARUH is
+             the big primary under the thumb; DASH + GANTI KOKI arc above it
+             with 14px gaps. GANTI KOKI is solo-only (visibility-hidden
+             online so DASH never shifts position). -->
+        <div class="pad-cluster">
+          <div class="pad-row">
+            <button class="tbtn" id="btnTouchDash" type="button">DASH</button>
+            <button class="tbtn" id="btnTouchSwap" type="button">GANTI<br/>KOKI</button>
+          </div>
+          <button class="tbtn" id="btnTouchInteract" type="button">AMBIL /<br/>TARUH</button>
+        </div>
       </div>
     </div><!-- /play-row -->
 
@@ -1722,7 +1745,21 @@
     });
     document.getElementById('btnPauseMenu').addEventListener('click', function(){ sfx('click'); if (mp.mode !== 'local') mpCleanup(true); showMenu(); });
     document.getElementById('btnPauseDisconnect').addEventListener('click', function(){ mpCleanup(true); showMenu(); });
-    document.getElementById('btnPauseTouch').addEventListener('click', function(){ initAudio(); if (state === 'playing') requestPause(); });
+    // Pause fires ONLY on a clean tap: pointerdown AND pointerup on this
+    // very button with the same pointer. A thumb sliding across the top of
+    // the screen (or releasing anywhere else) can never trigger it — the
+    // action buttons below stay pointerdown-instant, pause stays deliberate.
+    var pauseBtnTouch = document.getElementById('btnPauseTouch');
+    var pauseTapId = null;
+    pauseBtnTouch.addEventListener('pointerdown', function(e){ pauseTapId = e.pointerId; });
+    pauseBtnTouch.addEventListener('pointerup', function(e){
+      if (pauseTapId === null || e.pointerId !== pauseTapId) return;
+      pauseTapId = null;
+      initAudio();
+      if (state === 'playing') requestPause();
+    });
+    pauseBtnTouch.addEventListener('pointercancel', function(){ pauseTapId = null; });
+    pauseBtnTouch.addEventListener('pointerleave', function(){ pauseTapId = null; });
     document.getElementById('btnDisconnect').addEventListener('click', function(){ mpCleanup(true); showMenu(); });
     document.getElementById('btnDcMenu').addEventListener('click', function(){ mpCleanup(true); showMenu(); });
 
@@ -2113,7 +2150,9 @@
       // the pause overlay; the pause button itself only shows mid-play.
       touchEl.classList.toggle('controls-on', isTouch && (inGame || state === 'paused'));
       pauseBtnEl.classList.toggle('on', isTouch && inGame);
-      if (btnSwapEl) btnSwapEl.style.display = (mp.mode === 'local') ? '' : 'none';
+      // Solo-only, but hidden with visibility (not display) online so the
+      // DASH button keeps the exact same spot in the cluster either way.
+      if (btnSwapEl) btnSwapEl.style.visibility = (mp.mode === 'local') ? 'visible' : 'hidden';
       fitStage();
     }
     function refreshTouchMode(){
@@ -2187,15 +2226,15 @@
        off the bottom of the screen. Everything here resolves its elements
        lazily: refreshTouchMode() above runs before this section parses. */
     var mpBarHome; // no initializer: an early relocateMpBar() call must not be wiped
-    function relocateMpBar(inPad){
+    function relocateMpBar(inStrip){
       var bar = document.getElementById('mpBar');
-      var pad = document.getElementById('padRight');
-      if (!bar || !pad) return;
+      var slot = document.getElementById('topStrip');
+      if (!bar || !slot) return;
       if (!mpBarHome) mpBarHome = { p: bar.parentNode, n: bar.nextSibling };
-      if (inPad){
-        if (bar.parentNode !== pad){ pad.appendChild(bar); bar.classList.add('in-pad'); }
+      if (inStrip){
+        if (bar.parentNode !== slot){ slot.appendChild(bar); bar.classList.add('in-strip'); }
       } else if (bar.parentNode !== mpBarHome.p){
-        mpBarHome.p.insertBefore(bar, mpBarHome.n); bar.classList.remove('in-pad');
+        mpBarHome.p.insertBefore(bar, mpBarHome.n); bar.classList.remove('in-strip');
       }
     }
     function refreshLayoutMode(){
@@ -2224,9 +2263,9 @@
         stage.style.width = w.toFixed(1) + 'px';
         stage.style.height = (w * 9 / 16).toFixed(1) + 'px';
       }
-      // Safety net: a pad taller than the visible area (the right pad also
-      // carries the online bar in multiplayer) is scaled down a touch, so
-      // every button stays fully on-screen even on very short phones.
+      // Safety net: a pad taller than the visible area is scaled down a
+      // touch, so every button stays fully on-screen even on very short
+      // phones.
       if (padsW > 0){
         var pl2 = document.getElementById('padLeft'), pr2 = document.getElementById('padRight');
         [pl2, pr2].forEach(function(pad){
