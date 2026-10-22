@@ -199,6 +199,17 @@
       #btnTouchInteract{ width:86px; height:86px; font-size:13px; background:rgba(214,69,65,.82); }
       #btnTouchDash{ width:62px; height:62px; font-size:12px; background:rgba(91,127,166,.82); }
       .tbtn:active{ filter:brightness(1.25); }
+      /* Lobby player list + in-game player chips (Kuro Adventure style) */
+      .player-rows{ width:100%; max-width:440px; margin:10px auto 2px; display:flex; flex-direction:column; gap:8px; }
+      .player-row{ display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.05); border:2px solid rgba(245,197,66,.4); border-radius:10px; padding:9px 14px; font-size:15px; font-weight:700; text-align:left; }
+      .player-row .pdot{ width:14px; height:14px; border-radius:50%; flex:none; box-shadow:0 0 0 2px rgba(0,0,0,.45); }
+      .player-row .pname{ flex:1; letter-spacing:.3px; }
+      .player-row .pstatus{ font-size:13px; color:#ffeec4; font-weight:700; }
+      .player-row.waiting{ opacity:.5; }
+      .player-row.waiting .pstatus{ font-weight:400; }
+      #mpPlayers{ display:inline-flex; gap:10px; align-items:center; }
+      #mpPlayers .pchip{ display:inline-flex; align-items:center; gap:5px; font-size:12.5px; white-space:nowrap; }
+      #mpPlayers .cdot{ width:9px; height:9px; border-radius:50%; flex:none; }
       /* Legend under the stage */
       .legend{
         width:min(1180px,97vw); margin-top:10px;
@@ -234,6 +245,7 @@
       <div id="mpBar">
         <span class="dot-live"></span>
         <span id="mpBarText">Online</span>
+        <span id="mpPlayers"></span>
         <button id="btnDisconnect" type="button">PUTUSKAN</button>
       </div>
 
@@ -267,7 +279,7 @@
               Jeda: <span class="keys">P</span> / <span class="keys">Esc</span>
             </div>
           </div>
-          <p style="margin-top:10px;"><b>SOLO:</b> kamu mengendalikan satu koki (bertanda KAMU); koki satunya jadi partner yang diam menunggu — tekan <span class="keys">Tab</span>/<span class="keys">C</span> untuk bertukar kendali kapan saja. <b>MULTIPLAYER ONLINE:</b> dua perangkat, host = Raka, tamu = Gora, masing-masing memakai kontrol utama; jeda berlaku bersama untuk kedua pemain. Di HP: joystick + tombol, jeda lewat tombol &#10074;&#10074; di pojok layar.</p>
+          <p style="margin-top:10px;"><b>SOLO:</b> dapurnya versi kompak &mdash; lebih kecil dan simple, semua stasiun berdekatan. Kamu mengendalikan satu koki (bertanda KAMU); koki satunya jadi partner yang diam menunggu — tekan <span class="keys">Tab</span>/<span class="keys">C</span> untuk bertukar kendali kapan saja. <b>MULTIPLAYER ONLINE:</b> dapur besar untuk maksimal 3 pemain (host = Raka, tamu = Gora &amp; Mika), tiap pemain memakai kontrol utama di perangkatnya sendiri; jeda berlaku bersama untuk semua pemain. Di HP: joystick + tombol, jeda lewat tombol &#10074;&#10074; di pojok layar.</p>
           <button class="btn" id="btnHowBack" type="button">KEMBALI</button>
         </div>
       </div>
@@ -276,23 +288,31 @@
       <div class="overlay solid hidden" id="mpScreen">
         <div class="panel">
           <h2>MULTIPLAYER ONLINE</h2>
-          <p>Satu dapur, dua perangkat. Host menjadi <b style="color:#ff8a7a;">Raka</b>, tamu menjadi <b style="color:#8ac3ff;">Gora</b>. Host yang menjalankan dapurnya &mdash; tamu tinggal ikut masak.</p>
-          <div class="mp-cols">
-            <div class="mp-box">
-              <h3>BUAT ROOM</h3>
-              <p>Kamu jadi host (Raka). Bagikan kodenya ke temanmu.</p>
-              <button class="btn" id="btnCreateRoom" type="button">BUAT ROOM</button>
-              <div class="room-code" id="hostCode" style="display:none;"></div>
-              <div class="mp-status" id="hostStatus"></div>
-              <button class="btn" id="btnHostStart" type="button" style="display:none;" disabled>MULAI</button>
+          <p>Satu dapur besar, maksimal <b>3 pemain</b>. Host menjadi <b style="color:#ff8a7a;">Raka</b>, tamu menjadi <b style="color:#8ac3ff;">Gora</b> dan <b style="color:#7be495;">Mika</b>. Host yang menjalankan dapurnya &mdash; para tamu tinggal ikut masak dari perangkatnya masing-masing.</p>
+          <div id="mpEntry">
+            <div class="mp-cols">
+              <div class="mp-box">
+                <h3>BUAT ROOM</h3>
+                <p>Kamu jadi host (Raka). Bagikan kodenya ke temanmu (maks 2 tamu).</p>
+                <button class="btn" id="btnCreateRoom" type="button">BUAT ROOM</button>
+                <div class="mp-status" id="hostStatus"></div>
+              </div>
+              <div class="mp-box">
+                <h3>GABUNG ROOM</h3>
+                <p>Kamu jadi tamu (Gora / Mika). Masukkan kode room dari host.</p>
+                <input class="code-input" id="joinCode" type="text" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="KODE" aria-label="Kode room 5 karakter" />
+                <button class="btn" id="btnJoinRoom" type="button">GABUNG</button>
+                <div class="mp-status" id="guestStatus"></div>
+              </div>
             </div>
-            <div class="mp-box">
-              <h3>GABUNG ROOM</h3>
-              <p>Kamu jadi tamu (Gora). Masukkan kode room dari host.</p>
-              <input class="code-input" id="joinCode" type="text" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="KODE" aria-label="Kode room 5 karakter" />
-              <button class="btn" id="btnJoinRoom" type="button">GABUNG</button>
-              <div class="mp-status" id="guestStatus"></div>
-            </div>
+          </div>
+          <div id="mpLobby" style="display:none; width:100%;">
+            <p>Kode room &mdash; bagikan ke temanmu:</p>
+            <div class="room-code" id="lobbyCode">-----</div>
+            <div class="player-rows" id="lobbyPlayers"></div>
+            <div class="mp-status" id="lobbyStatus"></div>
+            <button class="btn" id="btnLobbyStart" type="button" style="display:none;" disabled>MULAI MASAK</button>
+            <button class="btn secondary" id="btnLobbyLeave" type="button">KELUAR ROOM</button>
           </div>
           <div class="mp-status err" id="mpError"></div>
           <button class="btn secondary" id="btnMpBack" type="button">KEMBALI KE MENU</button>
@@ -352,8 +372,8 @@
         Gerak <span class="k">W</span><span class="k">A</span><span class="k">S</span><span class="k">D</span> &middot; Interaksi <span class="k">E</span> (tahan untuk memotong &amp; mencuci) &middot; Dash <span class="k">Shift</span>
       </div>
       <div class="card">
-        <h3><span class="dot" style="background:#2470c2;"></span>Gora (partner)</h3>
-        Di mode solo, tekan <span class="k">Tab</span> / <span class="k">C</span> untuk ganti kendali ke koki satunya — yang tidak aktif diam menunggu. Jeda <span class="k">P</span> / <span class="k">Esc</span> &middot; Ulang <span class="k">R</span>
+        <h3><span class="dot" style="background:#2470c2;"></span>Gora &amp; <span class="dot" style="background:#2f9e4f;"></span>Mika</h3>
+        Solo: dapur kompak &amp; simple, tekan <span class="k">Tab</span> / <span class="k">C</span> untuk ganti kendali antar koki. Multiplayer online: dapur besar, maks 3 pemain — host Raka, tamu Gora &amp; Mika, tiap pemain dari perangkatnya sendiri. Jeda <span class="k">P</span> / <span class="k">Esc</span>
       </div>
       <div class="card">
         <h3>Resep</h3>
@@ -439,6 +459,14 @@
 
     /* ---------------- Game state ---------------- */
     var state = 'title'; // title | countdown | playing | paused | results
+    var layoutBig = true;               // false = compact solo kitchen
+    var KX = 0, KY = 0, KW = W, KH = H; // kitchen floor rect (px)
+    var CHEF_DEFS = [
+      { name: 'Raka', color: '#e0492f', hair: '#dfe6ee' },
+      { name: 'Gora', color: '#2470c2', hair: '#e08a3c' },
+      { name: 'Mika', color: '#2f9e4f', hair: '#4a2f1d' }
+    ];
+    var CHEF_LABEL = ['#ff8a7a', '#8ac3ff', '#7be495']; // brighter name colours for dark panels
     var stations = [], chefs = [], tickets = [], floaters = [], particles = [];
     var score = 0, served = 0, failed = 0;
     var timeLeft = LEVEL_TIME, spawnT = 0, sizzleT = 0, lastWholeSec = -1;
@@ -451,13 +479,17 @@
     var mp = {
       mode: 'local',          // local | host | guest
       peer: null, conn: null, code: '',
-      guestReady: false,      // host: a guest is connected
+      slots: [null, null, null], // host: PeerJS conn per role (index 0 unused; 1=Gora, 2=Mika)
+      role: 0,                // guest: my role (1=Gora, 2=Mika)
+      playerCount: 2,         // players in the current online game (host + guests, max 3)
+      lobbyPlayers: null,     // guest: last lobby roster received from the host
       snapT: 0,               // host broadcast accumulator
       inputT: 0,              // guest input heartbeat accumulator
       lastInputJson: '',
       pendingEvents: []       // host: one-shot sfx flags for next snapshot
     };
-    var guestInput = { v: { x: 0, y: 0 }, interact: false, dash: false }; // host-side view of guest keys
+    var guestInputs = {};     // host-side view of each guest's keys, keyed by role
+    function emptyInput(){ return { v: { x: 0, y: 0 }, interact: false, dash: false }; }
     var snapTargets = null;   // guest-side interpolation targets
 
     function addStation(gx, gy, type, label){
@@ -465,7 +497,7 @@
                  item: null, progress: 0, chopT: 0 };
       stations.push(st); return st;
     }
-    function buildStations(){
+    function buildStationsBig(){
       stations = [];
       // top row: serving, plates, trash, staging counters
       addStation(6, 0, 'serve', 'Meja Saji');
@@ -502,6 +534,27 @@
       addStation(9, 8, 'counter', 'Meja');
       addStation(10, 8, 'counter', '');
     }
+    function buildStationsSolo(){
+      stations = [];
+      // Compact solo kitchen: crates tight down the left side, ONE board,
+      // ONE stove, everything a few steps apart (grid coords are absolute;
+      // the kitchen frame sits at tiles x3..12, y1..7).
+      addStation(6, 1, 'serve', 'Meja Saji');
+      addStation(7, 1, 'serve', '');
+      addStation(8, 1, 'plates', 'Piring');
+      addStation(9, 1, 'trash', 'Sampah');
+      addStation(3, 2, 'crate_meat', 'Daging');
+      addStation(3, 3, 'crate_bun', 'Roti Bun');
+      addStation(3, 4, 'crate_lettuce', 'Selada');
+      addStation(3, 5, 'crate_tomato', 'Tomat');
+      addStation(6, 4, 'counter', 'Meja');
+      addStation(7, 4, 'board', 'Talenan');
+      addStation(8, 4, 'counter', '');
+      addStation(11, 4, 'counter', 'Meja');
+      addStation(5, 7, 'stove', 'Kompor');
+      addStation(7, 7, 'counter', 'Meja');
+      addStation(9, 7, 'sink', 'Wastafel');
+    }
     function sinkStation(){ for (var i = 0; i < stations.length; i++) if (stations[i].type === 'sink') return stations[i]; return null; }
 
     function makeChef(name, color, hair, x, y, scheme){
@@ -510,12 +563,18 @@
                dashT: 0, dashCd: 0, dashDir: { x: 0, y: 1 },
                interactHeld: false, interactPrev: false, walkPhase: 0, scheme: scheme };
     }
-    function resetGame(){
-      buildStations();
-      chefs = [
-        makeChef('Raka', '#e0492f', '#dfe6ee', 250, 540, 'raka'),
-        makeChef('Gora', '#2470c2', '#e08a3c', 1030, 190, 'gora')
-      ];
+    function resetGame(big, count){
+      layoutBig = !!big;
+      if (layoutBig){ buildStationsBig(); KX = 0; KY = 0; KW = W; KH = H; }
+      else { buildStationsSolo(); KX = 240; KY = 80; KW = 800; KH = 560; }
+      var spawnsBig = [[250, 540], [1030, 190], [640, 545]];
+      var spawnsSolo = [[430, 500], [870, 270]];
+      var n = Math.max(1, Math.min(3, count || 2));
+      chefs = [];
+      for (var ci = 0; ci < n; ci++){
+        var def = CHEF_DEFS[ci], sp = layoutBig ? spawnsBig[ci] : spawnsSolo[ci];
+        chefs.push(makeChef(def.name, def.color, def.hair, sp[0], sp[1], 'p' + ci));
+      }
       tickets = []; floaters = []; particles = []; pendingDirty = [];
       score = 0; served = 0; failed = 0;
       activeChef = 0; pausedBy = null;
@@ -526,7 +585,7 @@
 
     /* ---------------- Orders ---------------- */
     function spawnTicket(){
-      if (tickets.length >= 4) return;
+      if (tickets.length >= (mp.mode === 'local' ? 3 : 4)) return;
       var key = RECIPE_KEYS[(Math.random() * RECIPE_KEYS.length) | 0];
       tickets.push({ recipe: key, t: TICKET_TIME, total: TICKET_TIME });
     }
@@ -703,11 +762,12 @@
     function chefInput(c){
       var v = { x: 0, y: 0 }, interact = false, dash = false;
       if (mp.mode === 'guest') return { v: v, interact: interact, dash: dash }; // guests never simulate
-      if (mp.mode === 'host' && c === chefs[1]){
-        // Online host: Gora is driven by the guest's streamed input.
-        v.x = guestInput.v.x; v.y = guestInput.v.y;
-        interact = guestInput.interact;
-        dash = guestInput.dash;
+      if (mp.mode === 'host' && c !== chefs[0]){
+        // Online host: each guest chef is driven by that guest's streamed input.
+        var gi = guestInputs[chefs.indexOf(c)] || emptyInput();
+        v.x = gi.v.x; v.y = gi.v.y;
+        interact = gi.interact;
+        dash = gi.dash;
         return { v: v, interact: interact, dash: dash };
       }
       if (mp.mode === 'local' && c !== chefs[activeChef])
@@ -722,7 +782,7 @@
     }
     function isLocalChef(c){
       if (mp.mode === 'host') return c === chefs[0];
-      if (mp.mode === 'guest') return c === chefs[1];
+      if (mp.mode === 'guest') return c === chefs[mp.role || 1];
       return c === chefs[activeChef];
     }
     function switchChef(){
@@ -791,8 +851,8 @@
       c.x += mx * speed * dt * (c.dashT > 0 ? 1 : Math.min(1, len || 1));
       c.y += my * speed * dt * (c.dashT > 0 ? 1 : Math.min(1, len || 1));
       if (len > 0.1 || c.dashT > 0) c.walkPhase += dt * 11; else c.walkPhase = 0;
-      c.x = Math.max(c.r + 4, Math.min(W - c.r - 4, c.x));
-      c.y = Math.max(c.r + 4, Math.min(H - c.r - 4, c.y));
+      c.x = Math.max(KX + c.r + 4, Math.min(KX + KW - c.r - 4, c.x));
+      c.y = Math.max(KY + c.r + 4, Math.min(KY + KH - c.r - 4, c.y));
       collideStations(c);
       findTarget(c);
       // interact edge + hold
@@ -823,20 +883,23 @@
         if (mp.mode === 'local' && j !== activeChef) continue;
         updateChef(chefs[j], dt);
       }
-      // chef-chef soft collision
-      var a = chefs[0], b = chefs[1];
-      var dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy), minD = a.r + b.r + 2;
-      if (d > 0.01 && d < minD){
-        var push = (minD - d) / 2, ux = dx / d, uy = dy / d;
-        if (mp.mode === 'local'){
-          // The idle partner never moves: the active chef takes the full push.
-          var actC = chefs[activeChef];
-          if (actC === a){ a.x -= ux * push * 2; a.y -= uy * push * 2; }
-          else { b.x += ux * push * 2; b.y += uy * push * 2; }
-          collideStations(actC);
-        } else {
-          a.x -= ux * push; a.y -= uy * push; b.x += ux * push; b.y += uy * push;
-          collideStations(a); collideStations(b);
+      // chef-chef soft collision (all pairs)
+      for (var pi = 0; pi < chefs.length; pi++){
+        for (var pj = pi + 1; pj < chefs.length; pj++){
+          var a = chefs[pi], b = chefs[pj];
+          var dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy), minD = a.r + b.r + 2;
+          if (d > 0.01 && d < minD){
+            var push = (minD - d) / 2, ux = dx / d, uy = dy / d;
+            if (mp.mode === 'local'){
+              // The idle partner never moves: the active chef takes the full push.
+              var actC = chefs[activeChef];
+              if (actC === a){ a.x -= ux * push * 2; a.y -= uy * push * 2; collideStations(a); }
+              else if (actC === b){ b.x += ux * push * 2; b.y += uy * push * 2; collideStations(b); }
+            } else {
+              a.x -= ux * push; a.y -= uy * push; b.x += ux * push; b.y += uy * push;
+              collideStations(a); collideStations(b);
+            }
+          }
         }
       }
       // hold actions: chopping & washing
@@ -1290,16 +1353,49 @@
       ctx.fillStyle = '#ffeec4';
       ctx.fillText('BERSIAP...', W / 2, H / 2 + 66);
     }
+    function drawOutsideDecor(){
+      // Kuro Adventure-style dusk surroundings around the compact solo kitchen.
+      var sky = ctx.createLinearGradient(0, 0, 0, H);
+      sky.addColorStop(0, '#16283d'); sky.addColorStop(.55, '#274b36'); sky.addColorStop(1, '#101f13');
+      ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+      // crescent moon
+      ctx.fillStyle = '#f3e7d3'; ctx.beginPath(); ctx.arc(66, 58, 20, 0, 7); ctx.fill();
+      ctx.fillStyle = '#16283d'; ctx.beginPath(); ctx.arc(77, 52, 17, 0, 7); ctx.fill();
+      // distant hill band along the bottom
+      ctx.fillStyle = '#1c3320';
+      ctx.beginPath(); ctx.moveTo(0, 668);
+      ctx.quadraticCurveTo(320, 622, 640, 660); ctx.quadraticCurveTo(960, 694, 1280, 652);
+      ctx.lineTo(1280, 720); ctx.lineTo(0, 720); ctx.closePath(); ctx.fill();
+      // pine silhouettes flanking the kitchen
+      ctx.fillStyle = '#0d1f12';
+      var pxs = [52, 128, 196, 1096, 1168, 1232];
+      for (var i = 0; i < pxs.length; i++){
+        var x0 = pxs[i], base = 668 - (i % 3) * 14, hgt = 120 + (i % 3) * 26;
+        ctx.beginPath();
+        ctx.moveTo(x0, base - hgt); ctx.lineTo(x0 - 26, base - hgt * .45); ctx.lineTo(x0 - 13, base - hgt * .45);
+        ctx.lineTo(x0 - 32, base - 6); ctx.lineTo(x0 + 32, base - 6); ctx.lineTo(x0 + 13, base - hgt * .45);
+        ctx.lineTo(x0 + 26, base - hgt * .45); ctx.closePath(); ctx.fill();
+        ctx.fillRect(x0 - 4, base - 6, 8, 12);
+      }
+      // ground shadow under the kitchen frame
+      ctx.fillStyle = 'rgba(0,0,0,.35)';
+      ctx.beginPath(); ctx.ellipse(W / 2, KY + KH + 26, KW / 2 + 30, 18, 0, 0, 7); ctx.fill();
+    }
     function draw(){
       if (state === 'title'){ drawMenuScene(); return; }
-      // floor tiles
-      for (var gy = 0; gy < 18; gy++){
-        for (var gx = 0; gx < 32; gx++){
+      if (!layoutBig) drawOutsideDecor();
+      // floor tiles (kitchen rect only — the solo kitchen is a smaller framed area)
+      for (var gy = KY / 40; gy < (KY + KH) / 40; gy++){
+        for (var gx = KX / 40; gx < (KX + KW) / 40; gx++){
           ctx.fillStyle = (gx + gy) % 2 === 0 ? '#f0dcba' : '#e8d2ab';
           ctx.fillRect(gx * 40, gy * 40, 40, 40);
         }
       }
-      ctx.strokeStyle = '#c8a566'; ctx.lineWidth = 6; ctx.strokeRect(0, 0, W, H);
+      if (layoutBig){ ctx.strokeStyle = '#c8a566'; ctx.lineWidth = 6; ctx.strokeRect(0, 0, W, H); }
+      else {
+        ctx.strokeStyle = '#6f4517'; ctx.lineWidth = 10; ctx.strokeRect(KX, KY, KW, KH);
+        ctx.strokeStyle = 'rgba(245,197,66,.8)'; ctx.lineWidth = 2; ctx.strokeRect(KX + 8, KY + 8, KW - 16, KH - 16);
+      }
       for (var i = 0; i < stations.length; i++) drawStation(stations[i]);
       // chefs sorted by y for simple depth
       var sorted = chefs.slice().sort(function(p, q){ return p.y - q.y; });
@@ -1354,34 +1450,61 @@
     function startLevel(){
       initAudio(); sfx('click');
       if (mp.mode !== 'local') mpCleanup(false);
-      resetGame();
+      resetGame(false, 2); // solo: compact kitchen, 2 chefs
       state = 'playing';
       hideAllOverlays();
       updateTouchVisibility();
     }
-    function startOnlineGame(){
-      // Runs on BOTH sides: host sends {t:'start'}, both reset + count down together.
+    function openGuestCount(){
+      var n = 0;
+      for (var r = 1; r <= 2; r++) if (mp.slots[r] && mp.slots[r].open) n++;
+      return n;
+    }
+    function renderMpPlayers(){
+      // Online HUD player chips: role name in its identity colour + live connection dot.
+      var el = document.getElementById('mpPlayers');
+      if (!el) return;
+      var states = [true, true, true];
+      if (mp.mode === 'host') states = [true, !!(mp.slots[1] && mp.slots[1].open), !!(mp.slots[2] && mp.slots[2].open)];
+      var html = '';
+      for (var i = 0; i < mp.playerCount; i++){
+        html += '<span class="pchip"><span class="cdot" style="background:' + (states[i] ? '#7be495' : '#e0492f') + ';"></span>' +
+                '<span style="color:' + CHEF_LABEL[i] + ';">' + CHEF_DEFS[i].name + '</span></span>';
+      }
+      el.innerHTML = html;
+    }
+    function startOnlineGame(count){
+      // Runs on BOTH sides: host sends {t:'start', count}, both reset + count down together.
       initAudio();
-      resetGame();
-      guestInput = { v: { x: 0, y: 0 }, interact: false, dash: false };
+      mp.playerCount = Math.max(2, Math.min(3, count || mp.playerCount || 2));
+      resetGame(true, mp.playerCount); // online: big kitchen, 2–3 chefs
+      guestInputs = {};
       snapTargets = null;
       cdT = 3.2;
       state = 'countdown';
       hideAllOverlays();
       mpBarEl.classList.add('on');
-      mpBarText.textContent = mp.mode === 'host' ? 'Online · Kamu RAKA · Room ' + mp.code : 'Online · Kamu GORA · Room ' + mp.code;
+      var myName = mp.mode === 'host' ? 'RAKA' : CHEF_DEFS[mp.role || 1].name.toUpperCase();
+      mpBarText.textContent = 'Online · Room ' + mp.code + ' · Kamu ' + myName;
+      renderMpPlayers();
       updateTouchVisibility();
     }
-    var pausedBy = null; // 'local' | 'host' | 'guest' — who triggered the shared pause
+    function hostBroadcastStart(){
+      var count = 1 + openGuestCount();
+      for (var r = 1; r <= 2; r++)
+        if (mp.slots[r] && mp.slots[r].open){ try { mp.slots[r].send({ t: 'start', count: count }); } catch (e) {} }
+      startOnlineGame(count);
+    }
+    var pausedBy = null; // 'local' | role index (0=host, 1=Gora, 2=Mika) — who triggered the shared pause
     function showPauseOverlay(){
       var isGuest = mp.mode === 'guest';
       var byEl = document.getElementById('pauseByText');
       if (mp.mode === 'local'){ byEl.style.display = 'none'; }
       else {
         byEl.style.display = '';
-        byEl.textContent = pausedBy === 'guest' ? 'Dijeda oleh Tamu' : 'Dijeda oleh Host';
+        byEl.textContent = 'Dijeda oleh ' + ((pausedBy === 0 || pausedBy === null) ? 'Host' : CHEF_DEFS[pausedBy].name + ' (Tamu)');
       }
-      document.getElementById('btnResume').style.display = (isGuest && pausedBy !== 'guest') ? 'none' : '';
+      document.getElementById('btnResume').style.display = (isGuest && pausedBy !== mp.role) ? 'none' : '';
       document.getElementById('btnRestartFromPause').style.display = isGuest ? 'none' : '';
       document.getElementById('btnPauseMenu').style.display = isGuest ? 'none' : '';
       document.getElementById('btnPauseDisconnect').style.display = isGuest ? '' : 'none';
@@ -1390,7 +1513,7 @@
     }
     function pauseGame(by){
       if (state !== 'playing') return;
-      pausedBy = by || 'local';
+      pausedBy = (by === undefined || by === null) ? 'local' : by; // role 0 (host) is falsy — keep it
       state = 'paused';
       showPauseOverlay();
       sfx('click');
@@ -1408,13 +1531,13 @@
         if (mp.conn && mp.conn.open){ try { mp.conn.send({ t: 'pause' }); } catch (e) {} }
         return;
       }
-      pauseGame(mp.mode === 'host' ? 'host' : 'local');
+      pauseGame(mp.mode === 'host' ? 0 : 'local');
     }
     function requestResume(){
       if (state !== 'paused') return;
       if (mp.mode === 'guest'){
         // Only the player who paused (or the host) may resume.
-        if (pausedBy === 'guest' && mp.conn && mp.conn.open){ try { mp.conn.send({ t: 'resume' }); } catch (e) {} }
+        if (pausedBy === mp.role && mp.conn && mp.conn.open){ try { mp.conn.send({ t: 'resume' }); } catch (e) {} }
         return;
       }
       resumeGame();
@@ -1450,17 +1573,18 @@
     document.getElementById('btnOnline').addEventListener('click', function(){
       initAudio(); sfx('click');
       titleEl.classList.add('hidden'); mpEl.classList.remove('hidden');
+      showEntryView();
       if (typeof Peer === 'undefined')
         mpSetError('Multiplayer tidak bisa dimuat (library PeerJS tidak terjangkau). Cek koneksi internetmu, atau main mode lokal dulu ya.');
     });
     document.getElementById('btnAgain').addEventListener('click', function(){
-      if (mp.mode === 'host'){ if (mp.conn && mp.conn.open) mp.conn.send({ t: 'start' }); startOnlineGame(); }
+      if (mp.mode === 'host') hostBroadcastStart();
       else startLevel();
     });
     document.getElementById('btnResultMenu').addEventListener('click', function(){ mpCleanup(true); showMenu(); });
     document.getElementById('btnResume').addEventListener('click', requestResume);
     document.getElementById('btnRestartFromPause').addEventListener('click', function(){
-      if (mp.mode === 'host'){ if (mp.conn && mp.conn.open) mp.conn.send({ t: 'start' }); startOnlineGame(); }
+      if (mp.mode === 'host') hostBroadcastStart();
       else startLevel();
     });
     document.getElementById('btnPauseMenu').addEventListener('click', function(){ sfx('click'); if (mp.mode !== 'local') mpCleanup(true); showMenu(); });
@@ -1473,8 +1597,12 @@
     var hostStatusEl = document.getElementById('hostStatus');
     var guestStatusEl = document.getElementById('guestStatus');
     var mpErrorEl = document.getElementById('mpError');
-    var hostCodeEl = document.getElementById('hostCode');
-    var btnHostStart = document.getElementById('btnHostStart');
+    var lobbyCodeEl = document.getElementById('lobbyCode');
+    var lobbyStatusEl = document.getElementById('lobbyStatus');
+    var lobbyPlayersEl = document.getElementById('lobbyPlayers');
+    var btnLobbyStart = document.getElementById('btnLobbyStart');
+    var mpEntryEl = document.getElementById('mpEntry');
+    var mpLobbyEl = document.getElementById('mpLobby');
     var btnCreateRoom = document.getElementById('btnCreateRoom');
     var btnJoinRoom = document.getElementById('btnJoinRoom');
     var joinCodeEl = document.getElementById('joinCode');
@@ -1485,19 +1613,63 @@
       for (var i = 0; i < 5; i++) out += chars[(Math.random() * chars.length) | 0];
       return out;
     }
+    function lobbyPlayersState(){
+      if (mp.mode === 'host') return [true, !!(mp.slots[1] && mp.slots[1].open), !!(mp.slots[2] && mp.slots[2].open)];
+      return mp.lobbyPlayers || [true, false, false];
+    }
+    function renderLobby(){
+      var players = lobbyPlayersState();
+      var html = '';
+      for (var i = 0; i < 3; i++){
+        var status = i === 0 ? 'Host' : (players[i] ? 'Terhubung' : 'Menunggu…');
+        html += '<div class="player-row' + (players[i] ? '' : ' waiting') + '">' +
+          '<span class="pdot" style="background:' + CHEF_DEFS[i].color + ';"></span>' +
+          '<span class="pname">' + CHEF_DEFS[i].name + '</span>' +
+          '<span class="pstatus">' + status + '</span></div>';
+      }
+      lobbyPlayersEl.innerHTML = html;
+      if (mp.mode === 'host'){
+        var n = openGuestCount();
+        btnLobbyStart.disabled = n < 1;
+        mpSetStatus(lobbyStatusEl, n >= 1
+          ? n + ' tamu terhubung — tekan MULAI MASAK untuk mulai sekarang, atau tunggu tamu kedua untuk main bertiga.'
+          : 'Menunggu tamu bergabung… MULAI aktif begitu minimal 1 tamu terhubung.');
+      }
+    }
+    function sendLobby(){
+      var players = [true, !!(mp.slots[1] && mp.slots[1].open), !!(mp.slots[2] && mp.slots[2].open)];
+      for (var r = 1; r <= 2; r++)
+        if (mp.slots[r] && mp.slots[r].open){ try { mp.slots[r].send({ t: 'lobby', players: players }); } catch (e) {} }
+    }
+    function showLobbyView(){
+      mpEntryEl.style.display = 'none';
+      mpLobbyEl.style.display = '';
+      lobbyCodeEl.textContent = mp.code || '-----';
+      btnLobbyStart.style.display = mp.mode === 'host' ? '' : 'none';
+      renderLobby();
+    }
+    function showEntryView(){
+      mpEntryEl.style.display = '';
+      mpLobbyEl.style.display = 'none';
+    }
+    function mpInGame(){ return state === 'playing' || state === 'countdown' || state === 'results' || state === 'paused'; }
+    function hostBroadcastDc(msg){
+      for (var r = 1; r <= 2; r++)
+        if (mp.slots[r] && mp.slots[r].open){ try { mp.slots[r].send({ t: 'dc', msg: msg }); } catch (e) {} }
+    }
     function mpCleanup(resetMode){
+      for (var r = 1; r <= 2; r++){ try { if (mp.slots[r]) mp.slots[r].close(); } catch (e) {} mp.slots[r] = null; }
       try { if (mp.conn) mp.conn.close(); } catch (e) {}
       try { if (mp.peer) mp.peer.destroy(); } catch (e) {}
-      mp.conn = null; mp.peer = null; mp.guestReady = false; mp.pendingEvents = [];
-      guestInput = { v: { x: 0, y: 0 }, interact: false, dash: false };
+      mp.conn = null; mp.peer = null; mp.role = 0; mp.playerCount = 2; mp.lobbyPlayers = null; mp.pendingEvents = [];
+      guestInputs = {};
       snapTargets = null;
       if (resetMode) mp.mode = 'local';
-      btnHostStart.disabled = true;
       mpBarEl.classList.remove('on');
     }
     function mpDisconnected(msg){
       if (mp.mode === 'local') return;
-      var wasInGame = state === 'playing' || state === 'countdown' || state === 'results' || state === 'paused';
+      var wasInGame = mpInGame();
       mpCleanup(true);
       if (wasInGame){
         state = 'paused';
@@ -1508,29 +1680,44 @@
       } else {
         showMenu();
         titleEl.classList.add('hidden'); mpEl.classList.remove('hidden');
+        showEntryView();
         mpSetError(msg || 'Koneksi terputus.');
       }
     }
-    function hostWireConn(conn){
-      mp.conn = conn;
+    function hostWireConn(conn, role){
       conn.on('open', function(){
-        mp.guestReady = true;
-        mpSetStatus(hostStatusEl, 'Pemain 2 terhubung! Tekan MULAI untuk masak bareng.');
-        btnHostStart.disabled = false;
-        btnHostStart.style.display = '';
+        try { conn.send({ t: 'welcome', role: role }); } catch (e) {}
+        renderLobby(); sendLobby();
         sendSnapshot(); // let the guest render the kitchen behind its waiting note
       });
       conn.on('data', function(data){
         if (!data || typeof data !== 'object') return;
         if (data.t === 'input'){
-          guestInput.v.x = +data.x || 0; guestInput.v.y = +data.y || 0;
-          guestInput.interact = !!data.i; guestInput.dash = !!data.d;
+          var gi = guestInputs[role] || (guestInputs[role] = emptyInput());
+          gi.v.x = +data.x || 0; gi.v.y = +data.y || 0;
+          gi.interact = !!data.i; gi.dash = !!data.d;
         }
-        else if (data.t === 'pause'){ if (state === 'playing') pauseGame('guest'); }
-        else if (data.t === 'resume'){ if (state === 'paused' && pausedBy === 'guest') resumeGame(); }
+        else if (data.t === 'pause'){ if (state === 'playing') pauseGame(role); }
+        else if (data.t === 'resume'){ if (state === 'paused' && pausedBy === role) resumeGame(); }
       });
-      conn.on('close', function(){ mpDisconnected('Koneksi ke tamu terputus. Game dijeda.'); });
-      conn.on('error', function(){ mpDisconnected('Koneksi ke tamu bermasalah. Game dijeda.'); });
+      conn.on('close', function(){
+        if (mp.slots[role] === conn) mp.slots[role] = null;
+        if (mp.mode !== 'host') return;
+        if (mpInGame()){
+          var msg = 'Koneksi ke ' + CHEF_DEFS[role].name + ' terputus. Game dijeda.';
+          hostBroadcastDc(msg);
+          mpDisconnected(msg);
+        } else { renderLobby(); sendLobby(); }
+      });
+      conn.on('error', function(){
+        if (mp.slots[role] === conn) mp.slots[role] = null;
+        if (mp.mode !== 'host') return;
+        if (mpInGame()){
+          var msg2 = 'Koneksi ke ' + CHEF_DEFS[role].name + ' bermasalah. Game dijeda.';
+          hostBroadcastDc(msg2);
+          mpDisconnected(msg2);
+        } else { renderLobby(); sendLobby(); }
+      });
     }
     function createRoom(){
       mpSetError('');
@@ -1546,15 +1733,18 @@
       mp.peer.on('open', function(){
         opened = true;
         btnCreateRoom.disabled = false;
-        hostCodeEl.style.display = '';
-        hostCodeEl.textContent = mp.code;
-        btnHostStart.style.display = '';
-        btnHostStart.disabled = true;
-        mpSetStatus(hostStatusEl, 'Menunggu pemain 2… bagikan kode di atas ke temanmu.');
+        mpSetStatus(hostStatusEl, '');
+        showLobbyView();
       });
       mp.peer.on('connection', function(conn){
-        if (mp.conn && mp.conn.open){ try { conn.close(); } catch (e) {} return; } // one guest only
-        hostWireConn(conn);
+        // Max 3 players (host + 2 guests), and no new joins once the game has started.
+        var role = 0;
+        if (!mpInGame()){
+          for (var r = 1; r <= 2; r++) if (!mp.slots[r]){ role = r; break; }
+        }
+        if (!role){ try { conn.close(); } catch (e) {} return; }
+        mp.slots[role] = conn;
+        hostWireConn(conn, role);
       });
       mp.peer.on('error', function(err){
         btnCreateRoom.disabled = false;
@@ -1587,12 +1777,20 @@
         conn.on('open', function(){
           settled = true;
           btnJoinRoom.disabled = false;
-          mpSetStatus(guestStatusEl, 'Terhubung! Kamu jadi GORA. Menunggu host menekan MULAI…');
+          mpSetStatus(guestStatusEl, '');
+          showLobbyView();
+          mpSetStatus(lobbyStatusEl, 'Terhubung ke room! Menunggu host menekan MULAI MASAK…');
         });
         conn.on('data', function(data){
           if (!data || typeof data !== 'object') return;
-          if (data.t === 'start') startOnlineGame();
+          if (data.t === 'welcome'){
+            mp.role = data.role || 1;
+            mpSetStatus(lobbyStatusEl, 'Terhubung! Kamu jadi ' + CHEF_DEFS[mp.role].name.toUpperCase() + '. Menunggu host menekan MULAI MASAK…');
+          }
+          else if (data.t === 'lobby'){ mp.lobbyPlayers = data.players; renderLobby(); }
+          else if (data.t === 'start') startOnlineGame(data.count);
           else if (data.t === 'snap') applySnapshot(data);
+          else if (data.t === 'dc') mpDisconnected(data.msg || 'Koneksi terputus. Game dijeda.');
         });
         conn.on('close', function(){ mpDisconnected('Koneksi ke host terputus. Game dijeda.'); });
         conn.on('error', function(){ mpDisconnected('Koneksi ke host bermasalah. Game dijeda.'); });
@@ -1610,11 +1808,11 @@
     btnJoinRoom.addEventListener('click', joinRoom);
     joinCodeEl.addEventListener('keydown', function(e){ if (e.key === 'Enter') joinRoom(); e.stopPropagation(); });
     joinCodeEl.addEventListener('keyup', function(e){ e.stopPropagation(); });
-    btnHostStart.addEventListener('click', function(){
-      if (mp.mode !== 'host' || !mp.guestReady) return;
-      if (mp.conn && mp.conn.open) mp.conn.send({ t: 'start' });
-      startOnlineGame();
+    btnLobbyStart.addEventListener('click', function(){
+      if (mp.mode !== 'host' || openGuestCount() < 1) return;
+      hostBroadcastStart();
     });
+    document.getElementById('btnLobbyLeave').addEventListener('click', function(){ mpCleanup(true); showEntryView(); });
     document.getElementById('btnMpBack').addEventListener('click', function(){ mpCleanup(true); showMenu(); });
 
     /* -------- Host snapshot broadcast / guest apply -------- */
@@ -1634,8 +1832,14 @@
                tickets: tickets, stations: sts, chefs: cfs, ev: ev };
     }
     function sendSnapshot(){
-      if (mp.mode === 'host' && mp.conn && mp.conn.open){
-        try { mp.conn.send(buildSnapshot()); } catch (e) {}
+      if (mp.mode !== 'host') return;
+      var snap = null;
+      for (var r = 1; r <= 2; r++){
+        var cn = mp.slots[r];
+        if (cn && cn.open){
+          if (!snap) snap = buildSnapshot();
+          try { cn.send(snap); } catch (e) {}
+        }
       }
     }
     function applySnapshot(s){
@@ -1652,8 +1856,8 @@
       }
       if (s.chefs){
         snapTargets = s.chefs;
-        if (!chefs.length) resetGame();
-        for (var j = 0; j < Math.min(2, s.chefs.length); j++){
+        if (!chefs.length) resetGame(true, 2);
+        for (var j = 0; j < Math.min(chefs.length, s.chefs.length); j++){
           var sc = s.chefs[j], c = chefs[j];
           if (!c) continue;
           if (state !== 'playing' && state !== 'countdown'){ c.x = sc.x; c.y = sc.y; }
@@ -1670,7 +1874,7 @@
       else if (s.gs === 'countdown' && state !== 'countdown'){ state = 'countdown'; hideAllOverlays(); mpBarEl.classList.add('on'); }
       else if (s.gs === 'results' && state !== 'results'){ state = 'results'; showResults(); }
       else if (s.gs === 'paused'){
-        pausedBy = s.pb || 'host';
+        pausedBy = (s.pb === undefined || s.pb === null) ? 0 : s.pb;
         state = 'paused';
         showPauseOverlay(); // shows the overlay + keeps the "Dijeda oleh…" label fresh
       }
@@ -1750,7 +1954,7 @@
     window.addEventListener('orientationchange', checkOrientation);
 
     /* ---------------- Main loop ---------------- */
-    resetGame();
+    resetGame(true, 2);
     checkOrientation();
     var lastTs = 0, perfNow = 0;
     function loop(ts){
@@ -1764,8 +1968,8 @@
       } else if (state === 'playing' && mp.mode !== 'guest'){
         update(dt); // host + local run the simulation; guests never simulate
       }
-      // Host: broadcast full snapshots at ~12 Hz.
-      if (mp.mode === 'host' && mp.conn && mp.conn.open){
+      // Host: broadcast full snapshots to all guests at ~12 Hz.
+      if (mp.mode === 'host'){
         mp.snapT += dt;
         if (mp.snapT >= 0.083){ mp.snapT = 0; sendSnapshot(); }
       }
@@ -1776,7 +1980,7 @@
         if (mp.inputT >= 0.1){ mp.inputT = 0; guestSendInput(true); }
         if (snapTargets && (state === 'playing' || state === 'countdown')){
           var k = 1 - Math.exp(-dt * 14);
-          for (var gi = 0; gi < Math.min(2, snapTargets.length); gi++){
+          for (var gi = 0; gi < Math.min(chefs.length, snapTargets.length); gi++){
             if (!chefs[gi]) continue;
             chefs[gi].x += (snapTargets[gi].x - chefs[gi].x) * k;
             chefs[gi].y += (snapTargets[gi].y - chefs[gi].y) * k;
