@@ -45,6 +45,7 @@
       .stage{
         position:relative;
         width:min(1180px, 97vw, 148vh);
+        width:min(1180px, 97vw, calc((100dvh - 30px) * 16 / 9));
         aspect-ratio:16/9;
         border-radius:14px;
         overflow:hidden;
@@ -175,10 +176,18 @@
         font-family:inherit; font-weight:800; font-size:12.5px; cursor:pointer;
         background:transparent; color:var(--accent); border:2px solid var(--accent); border-radius:8px; padding:5px 12px;
       }
+      /* Online bar relocated into the right touch pad (phone landscape):
+         stacked & compact so it never covers the kitchen's bottom row. */
+      #mpBar.in-pad{
+        position:static; transform:none; flex-direction:column; gap:4px;
+        padding:6px 4px; font-size:11.5px; line-height:1.3; max-width:100%; text-align:center;
+      }
+      #mpBar.in-pad #mpPlayers{ flex-wrap:wrap; justify-content:center; gap:5px; }
+      #mpBar.in-pad #mpPlayers .pchip{ font-size:11px; }
+      #mpBar.in-pad button{ font-size:11px; padding:3px 9px; }
       #btnPauseTouch{
-        position:absolute; top:64px; right:10px; z-index:4;
         display:none; align-items:center; justify-content:center;
-        width:48px; height:48px; border-radius:50%;
+        width:44px; height:44px; border-radius:50%; flex:none;
         background:rgba(10,20,14,.92); border:2px solid var(--accent);
         color:var(--gold); font-size:16px; font-weight:800; cursor:pointer;
         box-shadow:0 6px 16px rgba(0,0,0,.5);
@@ -216,9 +225,20 @@
       .rotate-icon{ font-size:52px; margin-bottom:8px; animation:tilt 1.6s ease-in-out infinite; display:inline-block; }
       @keyframes tilt{ 0%,100%{ transform:rotate(-18deg);} 50%{ transform:rotate(70deg);} }
       @media (prefers-reduced-motion: reduce){ .rotate-icon{ animation:none; } }
-      /* Touch controls */
-      #touchControls{ position:absolute; inset:auto 0 0 0; display:none; justify-content:space-between; align-items:flex-end; padding:0 14px 14px; z-index:4; pointer-events:none; }
-      #touchControls.on{ display:flex; }
+      /* Touch controls — side pads OUTSIDE the stage frame, so no button
+         ever covers a kitchen station (solo or multiplayer). The pads take
+         real layout space; JS (fitStage) shrinks the stage to fit beside
+         them. Pads appear only in the phone-landscape layout
+         (body.touch-layout) while a level runs (.controls-on). */
+      .play-row{ display:flex; align-items:center; justify-content:center; gap:10px; width:100%; }
+      .play-row .stage{ flex:none; }
+      body.touch-layout{ height:100dvh; overflow:hidden; box-sizing:border-box; }
+      body.touch-layout .legend{ display:none; }
+      .side-pad{ display:none; flex-direction:column; align-items:center; justify-content:center; gap:8px; flex:none; }
+      body.touch-layout .play-row.controls-on .side-pad{ display:flex; }
+      .side-pad .pad-row{ display:flex; gap:10px; }
+      #padLeft{ width:122px; }
+      #padRight{ width:138px; }
       #joyBase{
         pointer-events:auto; position:relative; width:118px; height:118px; border-radius:50%;
         background:rgba(255,255,255,.14); border:2px solid rgba(255,255,255,.35);
@@ -239,10 +259,17 @@
       #btnTouchDash{ width:62px; height:62px; font-size:12px; background:rgba(91,127,166,.82); }
       #btnTouchSwap{ width:62px; height:62px; font-size:11px; background:rgba(47,158,79,.85); }
       .tbtn:active{ filter:brightness(1.25); }
-      /* Phone landscape: whole stage (kitchen + touch controls) fits without page scroll */
+      /* Phone landscape: whole stage fits the REAL visible viewport
+         (dvh + safe-area), never under browser chrome — no page scroll. */
       @media (pointer: coarse) and (orientation: landscape){
-        body{ padding:6px 6px 8px; }
-        .stage{ width:min(1180px, 98vw, 165vh); }
+        body{
+          padding:6px 6px 8px;
+          padding-top:max(6px, env(safe-area-inset-top));
+          padding-right:max(6px, env(safe-area-inset-right));
+          padding-bottom:max(8px, env(safe-area-inset-bottom));
+          padding-left:max(6px, env(safe-area-inset-left));
+        }
+        .stage{ width:min(1180px, 98vw, calc((100dvh - 20px) * 16 / 9)); }
         .legend{ display:none; }
       }
       /* Lobby player list + in-game player chips (Kuro Adventure style) */
@@ -275,29 +302,25 @@
     </style>
   </head>
   <body>
-    <div class="stage" id="stage">
-      <canvas id="game" width="1280" height="720"></canvas>
-
-      <!-- Touch controls (Raka) -->
-      <div id="touchControls">
+    <div class="play-row" id="playRow">
+      <!-- Touch controls live OUTSIDE the stage, in left/right pads, so no
+           button ever covers a kitchen station. JS shows the pads only in
+           the phone-landscape layout while a level runs, and shrinks the
+           stage so stage + pads fit the visible viewport exactly. -->
+      <div class="side-pad" id="padLeft">
         <div id="joyBase"><div id="joyStick"></div></div>
-        <div class="touch-btns">
-          <button class="tbtn" id="btnTouchDash" type="button">DASH</button>
-          <button class="tbtn" id="btnTouchSwap" type="button">GANTI<br/>KOKI</button>
-          <button class="tbtn" id="btnTouchInteract" type="button">AMBIL /<br/>TARUH</button>
-        </div>
       </div>
 
-      <!-- Multiplayer status bar (in-game) -->
+      <div class="stage" id="stage">
+      <canvas id="game" width="1280" height="720"></canvas>
+
+      <!-- Multiplayer status bar (in-game; JS moves it into the right pad on phones) -->
       <div id="mpBar">
         <span class="dot-live"></span>
         <span id="mpBarText">Online</span>
         <span id="mpPlayers"></span>
         <button id="btnDisconnect" type="button">PUTUSKAN</button>
       </div>
-
-      <!-- Touch pause button -->
-      <button id="btnPauseTouch" type="button" aria-label="Jeda">&#10074;&#10074;</button>
 
       <!-- Title screen / main menu -->
       <div class="overlay" id="titleScreen">
@@ -327,14 +350,14 @@
             </div>
             <div class="ctl-card">
               <b>KONTROL SENTUH</b> (HP / tablet)<br/>
-              Joystick kiri bawah: gerak koki<br/>
+              Joystick di kolom kiri layar: gerak koki<br/>
               <span class="keys">AMBIL / TARUH</span>: interaksi &mdash; tahan untuk memotong &amp; mencuci<br/>
               <span class="keys">DASH</span>: lari cepat<br/>
               <span class="keys">GANTI KOKI</span> (solo): tukar koki yang dikendalikan<br/>
-              Tombol &#10074;&#10074; pojok kanan atas: jeda
+              Tombol &#10074;&#10074; di kolom kanan layar: jeda
             </div>
           </div>
-          <p style="margin-top:10px;"><b>SOLO:</b> dapurnya versi kompak &mdash; lebih kecil dan simple, semua stasiun berdekatan. Kamu mengendalikan satu koki (bertanda KAMU); koki satunya jadi partner yang diam menunggu — tekan <span class="keys">Tab</span>/<span class="keys">C</span> untuk bertukar kendali kapan saja. <b>MULTIPLAYER ONLINE:</b> dapur besar untuk maksimal 3 pemain (host = Raka, tamu = Gora &amp; Mika), tiap pemain memakai kontrol utama di perangkatnya sendiri; jeda berlaku bersama untuk semua pemain. Di HP: joystick + tombol, jeda lewat tombol &#10074;&#10074; di pojok layar.</p>
+          <p style="margin-top:10px;"><b>SOLO:</b> dapurnya versi kompak &mdash; lebih kecil dan simple, semua stasiun berdekatan. Kamu mengendalikan satu koki (bertanda KAMU); koki satunya jadi partner yang diam menunggu — tekan <span class="keys">Tab</span>/<span class="keys">C</span> untuk bertukar kendali kapan saja. <b>MULTIPLAYER ONLINE:</b> dapur besar untuk maksimal 3 pemain (host = Raka, tamu = Gora &amp; Mika), tiap pemain memakai kontrol utama di perangkatnya sendiri; jeda berlaku bersama untuk semua pemain. Di HP: joystick + tombol di kolom kiri/kanan layar, jeda lewat tombol &#10074;&#10074; di kolom kanan.</p>
           <button class="btn" id="btnHowBack" type="button">KEMBALI</button>
         </div>
       </div>
@@ -464,7 +487,17 @@
         <h2>Putar HP kamu ke landscape</h2>
         <p>Dapurnya lebar — miringkan HP biar semua stasiun kelihatan dan enak dimainkan.</p>
       </div>
-    </div>
+      </div><!-- /stage -->
+
+      <div class="side-pad" id="padRight">
+        <button class="tbtn" id="btnTouchInteract" type="button">AMBIL /<br/>TARUH</button>
+        <div class="pad-row">
+          <button class="tbtn" id="btnTouchDash" type="button">DASH</button>
+          <button class="tbtn" id="btnTouchSwap" type="button">GANTI<br/>KOKI</button>
+        </div>
+        <button id="btnPauseTouch" type="button" aria-label="Jeda">&#10074;&#10074;</button>
+      </div>
+    </div><!-- /play-row -->
 
     <div class="legend">
       <div class="card">
@@ -2071,18 +2104,22 @@
        no manual toggle; touch controls simply show on touch devices. */
     var isTouch = false, touchSeen = false;
     var coarseMQ = window.matchMedia ? window.matchMedia('(pointer: coarse)') : null;
-    var touchEl = document.getElementById('touchControls');
+    var touchEl = document.getElementById('playRow');
     var pauseBtnEl = document.getElementById('btnPauseTouch');
     var btnSwapEl = document.getElementById('btnTouchSwap');
     function updateTouchVisibility(){
       var inGame = state === 'playing' || state === 'countdown';
-      touchEl.classList.toggle('on', isTouch && inGame);
+      // Pads also stay up while paused, so the stage never resizes under
+      // the pause overlay; the pause button itself only shows mid-play.
+      touchEl.classList.toggle('controls-on', isTouch && (inGame || state === 'paused'));
       pauseBtnEl.classList.toggle('on', isTouch && inGame);
       if (btnSwapEl) btnSwapEl.style.display = (mp.mode === 'local') ? '' : 'none';
+      fitStage();
     }
     function refreshTouchMode(){
       isTouch = touchSeen || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || !!(coarseMQ && coarseMQ.matches);
       updateTouchVisibility();
+      refreshLayoutMode();
       if (typeof rotateEl !== 'undefined' && rotateEl) checkOrientation();
     }
     window.addEventListener('pointerdown', function(e){
@@ -2140,6 +2177,71 @@
       if (state === 'playing' || state === 'countdown') switchChef();
     });
     refreshTouchMode();
+
+    /* ---------------- Phone-landscape fit ----------------
+       On touch devices in landscape, the stage is sized in px from the
+       REAL visible viewport (measured row width + window.innerHeight),
+       with layout space reserved for the side pads. vh units lie in some
+       webviews — they count space hidden behind browser chrome — which is
+       what used to push the kitchen's bottom row (Kompor/Meja/Wastafel)
+       off the bottom of the screen. Everything here resolves its elements
+       lazily: refreshTouchMode() above runs before this section parses. */
+    var mpBarHome; // no initializer: an early relocateMpBar() call must not be wiped
+    function relocateMpBar(inPad){
+      var bar = document.getElementById('mpBar');
+      var pad = document.getElementById('padRight');
+      if (!bar || !pad) return;
+      if (!mpBarHome) mpBarHome = { p: bar.parentNode, n: bar.nextSibling };
+      if (inPad){
+        if (bar.parentNode !== pad){ pad.appendChild(bar); bar.classList.add('in-pad'); }
+      } else if (bar.parentNode !== mpBarHome.p){
+        mpBarHome.p.insertBefore(bar, mpBarHome.n); bar.classList.remove('in-pad');
+      }
+    }
+    function refreshLayoutMode(){
+      var on = isTouch && window.innerWidth > window.innerHeight && window.innerHeight <= 820;
+      document.body.classList.toggle('touch-layout', on);
+      relocateMpBar(on);
+      fitStage();
+    }
+    function fitStage(){
+      var stage = document.getElementById('stage');
+      var row = document.getElementById('playRow');
+      if (!stage || !row) return;
+      if (!document.body.classList.contains('touch-layout')){
+        stage.style.width = ''; stage.style.height = '';
+        return;
+      }
+      var padsW = 0;
+      if (row.classList.contains('controls-on')){
+        var pl = document.getElementById('padLeft'), pr = document.getElementById('padRight');
+        if (pl && pr) padsW = pl.offsetWidth + pr.offsetWidth + 20; // pads + 2 row gaps
+      }
+      var availW = Math.max(0, row.clientWidth - padsW);
+      var availH = Math.max(0, window.innerHeight - row.getBoundingClientRect().top - 8);
+      var w = Math.min(availW, availH * 16 / 9);
+      if (w > 0){
+        stage.style.width = w.toFixed(1) + 'px';
+        stage.style.height = (w * 9 / 16).toFixed(1) + 'px';
+      }
+      // Safety net: a pad taller than the visible area (the right pad also
+      // carries the online bar in multiplayer) is scaled down a touch, so
+      // every button stays fully on-screen even on very short phones.
+      if (padsW > 0){
+        var pl2 = document.getElementById('padLeft'), pr2 = document.getElementById('padRight');
+        [pl2, pr2].forEach(function(pad){
+          if (!pad) return;
+          pad.style.transform = '';
+          var ph = pad.offsetHeight;
+          if (ph > availH && ph > 0) pad.style.transform = 'scale(' + (availH / ph).toFixed(3) + ')';
+        });
+      }
+    }
+    window.addEventListener('resize', refreshLayoutMode);
+    window.addEventListener('orientationchange', function(){
+      refreshLayoutMode(); setTimeout(refreshLayoutMode, 250); setTimeout(refreshLayoutMode, 600);
+    });
+    refreshLayoutMode();
 
     /* ---------------- Rotate hint ---------------- */
     var rotateEl = document.getElementById('rotateHint');
