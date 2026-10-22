@@ -98,17 +98,56 @@
       .btn.secondary{ background:transparent; color:var(--accent); box-shadow:0 5px 0 rgba(0,0,0,.55), 0 10px 22px rgba(0,0,0,.35); }
       .btn.secondary:active{ box-shadow:0 1px 0 rgba(0,0,0,.55); }
       .btn.small{ min-width:0; padding:8px 18px; font-size:14px; margin-top:0; }
-      /* Multiplayer form */
-      .mp-cols{ display:flex; gap:14px; flex-wrap:wrap; justify-content:center; margin-top:8px; width:100%; }
-      .mp-box{
+      /* Multiplayer — full-bleed Kuro Adventure style screens (gate / join / lobby) */
+      #mpScreen{
+        background:transparent;
+        border:3px solid var(--gold);
         box-sizing:border-box;
-        flex:1 1 240px; max-width:300px; text-align:center;
-        background:rgba(255,255,255,.05); border:2px solid rgba(245,197,66,.5); border-radius:10px;
-        padding:12px 14px 14px;
+        padding:20px 16px;
       }
-      .mp-box h3{ margin:0 0 4px; font-family:"Press Start 2P",monospace; font-size:12px; font-weight:400; color:var(--gold); line-height:1.5; }
-      .mp-box p{ font-size:13px; }
-      .mp-box .btn{ min-width:0; width:100%; }
+      .mp-scene{ position:absolute; inset:0; z-index:0; }
+      .mp-scene svg{ width:100%; height:100%; display:block; }
+      .mp-view{
+        position:relative; z-index:1;
+        width:100%; margin-top:auto; margin-bottom:auto;
+        display:flex; flex-direction:column; align-items:center;
+      }
+      .mp-title{
+        margin:0 0 8px; font-family:"Press Start 2P",monospace; font-weight:400;
+        font-size:clamp(20px,4.2vw,40px); letter-spacing:2px; line-height:1.3; text-align:center;
+        color:var(--gold); text-shadow:0 3px 0 #7a5410, 0 6px 18px rgba(0,0,0,.65);
+      }
+      .mp-title.small{ font-size:clamp(16px,3.2vw,29px); }
+      .mp-sub{
+        font-family:"Press Start 2P",monospace; font-size:clamp(10px,1.9vw,16px);
+        color:#eaf6df; letter-spacing:1px; margin-bottom:16px; text-align:center;
+        text-shadow:0 2px 0 rgba(0,0,0,.55);
+      }
+      .mp-desc{
+        font-family:"Press Start 2P",monospace; font-size:clamp(8.5px,1.35vw,11px);
+        line-height:2; color:#a9d69b; max-width:620px; margin:0 0 8px; text-align:center;
+        text-shadow:0 1px 0 rgba(0,0,0,.65);
+      }
+      .mp-btn{
+        font-family:"Press Start 2P",monospace; font-weight:400;
+        width:min(430px,86vw); min-width:0;
+        font-size:clamp(12px,1.9vw,17px); letter-spacing:1px; line-height:1.4;
+        padding:15px 18px; margin-top:14px; border-radius:6px; border-width:3px;
+      }
+      .mp-btn.dark{
+        background:rgba(5,12,8,.88); color:#fdf6e0; border-color:var(--gold);
+        box-shadow:0 5px 0 rgba(0,0,0,.6), 0 10px 22px rgba(0,0,0,.4);
+      }
+      .mp-btn.dark:active{ box-shadow:0 1px 0 rgba(0,0,0,.6); }
+      #mpScreen .mp-status{ font-size:14.5px; }
+      #mpScreen .code-input{ margin:10px 0 2px; }
+      @media (max-height:520px){
+        .mp-btn{ padding:9px 12px; margin-top:8px; font-size:11px; }
+        .mp-title{ font-size:22px; }
+        .mp-title.small{ font-size:17px; }
+        .mp-sub{ margin-bottom:8px; }
+        .mp-desc{ line-height:1.7; }
+      }
       .room-code{
         font-family:"Press Start 2P",monospace; font-size:clamp(22px,4vw,32px); color:#fff;
         letter-spacing:4px; margin:8px 0 2px; text-shadow:0 2px 0 rgba(0,0,0,.6);
@@ -284,38 +323,83 @@
         </div>
       </div>
 
-      <!-- Multiplayer lobby -->
-      <div class="overlay solid hidden" id="mpScreen">
-        <div class="panel">
-          <h2>MULTIPLAYER ONLINE</h2>
-          <p>Satu dapur besar, maksimal <b>3 pemain</b>. Host menjadi <b style="color:#ff8a7a;">Raka</b>, tamu menjadi <b style="color:#8ac3ff;">Gora</b> dan <b style="color:#7be495;">Mika</b>. Host yang menjalankan dapurnya &mdash; para tamu tinggal ikut masak dari perangkatnya masing-masing.</p>
-          <div id="mpEntry">
-            <div class="mp-cols">
-              <div class="mp-box">
-                <h3>BUAT ROOM</h3>
-                <p>Kamu jadi host (Raka). Bagikan kodenya ke temanmu (maks 2 tamu).</p>
-                <button class="btn" id="btnCreateRoom" type="button">BUAT ROOM</button>
-                <div class="mp-status" id="hostStatus"></div>
-              </div>
-              <div class="mp-box">
-                <h3>GABUNG ROOM</h3>
-                <p>Kamu jadi tamu (Gora / Mika). Masukkan kode room dari host.</p>
-                <input class="code-input" id="joinCode" type="text" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="KODE" aria-label="Kode room 5 karakter" />
-                <button class="btn" id="btnJoinRoom" type="button">GABUNG</button>
-                <div class="mp-status" id="guestStatus"></div>
-              </div>
-            </div>
-          </div>
-          <div id="mpLobby" style="display:none; width:100%;">
-            <p>Kode room &mdash; bagikan ke temanmu:</p>
-            <div class="room-code" id="lobbyCode">-----</div>
-            <div class="player-rows" id="lobbyPlayers"></div>
-            <div class="mp-status" id="lobbyStatus"></div>
-            <button class="btn" id="btnLobbyStart" type="button" style="display:none;" disabled>MULAI MASAK</button>
-            <button class="btn secondary" id="btnLobbyLeave" type="button">KELUAR ROOM</button>
-          </div>
-          <div class="mp-status err" id="mpError"></div>
-          <button class="btn secondary" id="btnMpBack" type="button">KEMBALI KE MENU</button>
+      <!-- Multiplayer: Kuro Adventure style full-bleed screens (gate / join / lobby) -->
+      <div class="overlay hidden" id="mpScreen">
+        <div class="mp-scene" aria-hidden="true">
+          <svg viewBox="0 0 1280 720" preserveAspectRatio="xMidYMid slice" focusable="false">
+            <defs>
+              <linearGradient id="mpSky" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#7ea9cf"/>
+                <stop offset="1" stop-color="#c3dcee"/>
+              </linearGradient>
+              <linearGradient id="mpLand" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#1e3c25"/>
+                <stop offset="1" stop-color="#0a1a0f"/>
+              </linearGradient>
+            </defs>
+            <rect x="0" y="0" width="1280" height="118" fill="url(#mpSky)"/>
+            <ellipse cx="185" cy="36" rx="125" ry="21" fill="#5d7484" opacity=".55"/>
+            <ellipse cx="1085" cy="28" rx="155" ry="25" fill="#5d7484" opacity=".5"/>
+            <ellipse cx="650" cy="58" rx="95" ry="14" fill="#5d7484" opacity=".35"/>
+            <rect x="0" y="108" width="1280" height="612" fill="url(#mpLand)"/>
+            <g fill="#17351f">
+              <circle cx="90" cy="185" r="72"/><circle cx="250" cy="168" r="88"/><circle cx="430" cy="182" r="70"/>
+              <circle cx="610" cy="165" r="92"/><circle cx="790" cy="180" r="72"/><circle cx="955" cy="166" r="86"/>
+              <circle cx="1120" cy="182" r="74"/><circle cx="1260" cy="168" r="84"/>
+            </g>
+            <g>
+              <rect x="96" y="330" width="17" height="390" fill="#07150b"/>
+              <circle cx="104" cy="262" r="118" fill="#0c2113"/>
+              <circle cx="52" cy="330" r="82" fill="#0c2113"/>
+              <circle cx="162" cy="330" r="86" fill="#0c2113"/>
+            </g>
+            <g>
+              <rect x="1168" y="330" width="17" height="390" fill="#07150b"/>
+              <circle cx="1176" cy="262" r="118" fill="#0c2113"/>
+              <circle cx="1118" cy="330" r="82" fill="#0c2113"/>
+              <circle cx="1232" cy="330" r="86" fill="#0c2113"/>
+            </g>
+            <g opacity=".8">
+              <rect x="330" y="470" width="12" height="250" fill="#07150b"/>
+              <circle cx="336" cy="428" r="72" fill="#0e2817"/>
+              <rect x="928" y="470" width="12" height="250" fill="#07150b"/>
+              <circle cx="934" cy="428" r="72" fill="#0e2817"/>
+            </g>
+            <path d="M0,646 Q320,606 640,642 T1280,640 V720 H0 Z" fill="#08170d"/>
+          </svg>
+        </div>
+
+        <!-- Gate: only the 3 buttons, exactly like Kuro Adventure -->
+        <div class="mp-view" id="mpGate">
+          <div class="mp-title">MULTIPLAYER</div>
+          <div class="mp-sub">MAIN BERTIGA ONLINE (CO-OP)</div>
+          <p class="mp-desc">Satu pemain buat room, sampai DUA teman gabung pakai kode room. Maks 3 pemain!</p>
+          <button class="btn mp-btn" id="btnCreateRoom" type="button">BUAT ROOM</button>
+          <button class="btn mp-btn dark" id="btnGoJoin" type="button">GABUNG ROOM</button>
+          <button class="btn mp-btn dark" id="btnMpBack" type="button">KEMBALI</button>
+          <div class="mp-status err" id="mpGateStatus"></div>
+        </div>
+
+        <!-- Join: its own screen, code field lives here only -->
+        <div class="mp-view" id="mpJoin" style="display:none;">
+          <div class="mp-title small">GABUNG ROOM</div>
+          <p class="mp-desc">Kamu jadi tamu (Gora / Mika). Masukkan kode room dari host.</p>
+          <input class="code-input" id="joinCode" type="text" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="KODE" aria-label="Kode room 5 karakter" />
+          <button class="btn mp-btn" id="btnJoinRoom" type="button">GABUNG</button>
+          <button class="btn mp-btn dark" id="btnJoinBack" type="button">KEMBALI</button>
+          <div class="mp-status" id="guestStatus"></div>
+        </div>
+
+        <!-- Lobby: its own room screen -->
+        <div class="mp-view" id="mpLobby" style="display:none;">
+          <div class="mp-title small">ROOM</div>
+          <p class="mp-desc">Kode room &mdash; bagikan ke temanmu:</p>
+          <div class="room-code" id="lobbyCode">-----</div>
+          <div class="player-rows" id="lobbyPlayers"></div>
+          <div class="mp-status" id="lobbyStatus"></div>
+          <button class="btn mp-btn" id="btnLobbyRetry" type="button" style="display:none;">COBA LAGI</button>
+          <button class="btn mp-btn" id="btnLobbyStart" type="button" style="display:none;" disabled>MULAI MASAK</button>
+          <button class="btn mp-btn dark" id="btnLobbyLeave" type="button">KELUAR ROOM</button>
         </div>
       </div>
 
@@ -1573,7 +1657,7 @@
     document.getElementById('btnOnline').addEventListener('click', function(){
       initAudio(); sfx('click');
       titleEl.classList.add('hidden'); mpEl.classList.remove('hidden');
-      showEntryView();
+      showGateView();
       if (typeof Peer === 'undefined')
         mpSetError('Multiplayer tidak bisa dimuat (library PeerJS tidak terjangkau). Cek koneksi internetmu, atau main mode lokal dulu ya.');
     });
@@ -1594,19 +1678,20 @@
     document.getElementById('btnDcMenu').addEventListener('click', function(){ mpCleanup(true); showMenu(); });
 
     /* ---------------- Multiplayer wiring ---------------- */
-    var hostStatusEl = document.getElementById('hostStatus');
     var guestStatusEl = document.getElementById('guestStatus');
-    var mpErrorEl = document.getElementById('mpError');
+    var gateStatusEl = document.getElementById('mpGateStatus');
     var lobbyCodeEl = document.getElementById('lobbyCode');
     var lobbyStatusEl = document.getElementById('lobbyStatus');
     var lobbyPlayersEl = document.getElementById('lobbyPlayers');
     var btnLobbyStart = document.getElementById('btnLobbyStart');
-    var mpEntryEl = document.getElementById('mpEntry');
+    var btnLobbyRetry = document.getElementById('btnLobbyRetry');
+    var mpGateEl = document.getElementById('mpGate');
+    var mpJoinEl = document.getElementById('mpJoin');
     var mpLobbyEl = document.getElementById('mpLobby');
     var btnCreateRoom = document.getElementById('btnCreateRoom');
     var btnJoinRoom = document.getElementById('btnJoinRoom');
     var joinCodeEl = document.getElementById('joinCode');
-    function mpSetError(msg){ mpErrorEl.textContent = msg || ''; }
+    function mpSetError(msg){ gateStatusEl.textContent = msg || ''; }
     function mpSetStatus(el, msg, isErr){ el.textContent = msg || ''; el.classList.toggle('err', !!isErr); }
     function makeRoomCode(){
       var chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789', out = '';
@@ -1642,15 +1727,25 @@
         if (mp.slots[r] && mp.slots[r].open){ try { mp.slots[r].send({ t: 'lobby', players: players }); } catch (e) {} }
     }
     function showLobbyView(){
-      mpEntryEl.style.display = 'none';
+      mpGateEl.style.display = 'none';
+      mpJoinEl.style.display = 'none';
       mpLobbyEl.style.display = '';
       lobbyCodeEl.textContent = mp.code || '-----';
       btnLobbyStart.style.display = mp.mode === 'host' ? '' : 'none';
+      btnLobbyRetry.style.display = 'none';
       renderLobby();
     }
-    function showEntryView(){
-      mpEntryEl.style.display = '';
+    function showGateView(){
+      mpGateEl.style.display = '';
+      mpJoinEl.style.display = 'none';
       mpLobbyEl.style.display = 'none';
+    }
+    function showJoinView(){
+      mpGateEl.style.display = 'none';
+      mpJoinEl.style.display = '';
+      mpLobbyEl.style.display = 'none';
+      mpSetStatus(guestStatusEl, '');
+      btnJoinRoom.disabled = false;
     }
     function mpInGame(){ return state === 'playing' || state === 'countdown' || state === 'results' || state === 'paused'; }
     function hostBroadcastDc(msg){
@@ -1658,6 +1753,7 @@
         if (mp.slots[r] && mp.slots[r].open){ try { mp.slots[r].send({ t: 'dc', msg: msg }); } catch (e) {} }
     }
     function mpCleanup(resetMode){
+      mp.attempt = (mp.attempt || 0) + 1; // invalidate any in-flight create/join attempt + its timeout
       for (var r = 1; r <= 2; r++){ try { if (mp.slots[r]) mp.slots[r].close(); } catch (e) {} mp.slots[r] = null; }
       try { if (mp.conn) mp.conn.close(); } catch (e) {}
       try { if (mp.peer) mp.peer.destroy(); } catch (e) {}
@@ -1680,7 +1776,7 @@
       } else {
         showMenu();
         titleEl.classList.add('hidden'); mpEl.classList.remove('hidden');
-        showEntryView();
+        showGateView();
         mpSetError(msg || 'Koneksi terputus.');
       }
     }
@@ -1719,22 +1815,41 @@
         } else { renderLobby(); sendLobby(); }
       });
     }
+    function createRoomFailed(msg){
+      // End state for a failed create attempt: clear error + COBA LAGI on the room screen.
+      try { if (mp.peer) mp.peer.destroy(); } catch (e) {}
+      mp.peer = null;
+      lobbyCodeEl.textContent = '-----';
+      lobbyPlayersEl.innerHTML = '';
+      btnLobbyStart.style.display = 'none';
+      btnLobbyRetry.style.display = '';
+      mpSetStatus(lobbyStatusEl, msg, true);
+    }
     function createRoom(){
       mpSetError('');
-      if (typeof Peer === 'undefined'){ mpSetError('PeerJS gagal dimuat — multiplayer tidak tersedia. Cek koneksi internet, atau main mode lokal dulu.'); return; }
+      if (typeof Peer === 'undefined'){ mpSetError('PeerJS gagal dimuat — multiplayer tidak tersedia. Cek koneksi internet, atau main mode solo dulu.'); return; }
       mpCleanup(true);
       mp.mode = 'host';
       mp.code = makeRoomCode();
-      btnCreateRoom.disabled = true;
-      mpSetStatus(hostStatusEl, 'Membuat room...');
+      var attempt = mp.attempt;
+      // Kuro flow: move straight to the room screen; creation state shows there.
+      showLobbyView();
+      lobbyCodeEl.textContent = '-----';
+      lobbyPlayersEl.innerHTML = '';
+      mpSetStatus(lobbyStatusEl, 'Membuat room…');
       try { mp.peer = new Peer(MP_PREFIX + mp.code.toLowerCase()); }
-      catch (e) { mpSetStatus(hostStatusEl, 'Gagal membuat room.', true); btnCreateRoom.disabled = false; return; }
+      catch (e) { createRoomFailed('Gagal membuat room. Cek koneksi internet lalu coba lagi.'); return; }
       var opened = false;
+      var timer = setTimeout(function(){
+        if (mp.attempt !== attempt || opened) return;
+        createRoomFailed('Gagal membuat room. Cek koneksi internet lalu coba lagi.');
+      }, 10000);
       mp.peer.on('open', function(){
+        if (mp.attempt !== attempt) return;
         opened = true;
-        btnCreateRoom.disabled = false;
-        mpSetStatus(hostStatusEl, '');
-        showLobbyView();
+        clearTimeout(timer);
+        lobbyCodeEl.textContent = mp.code;
+        renderLobby();
       });
       mp.peer.on('connection', function(conn){
         // Max 3 players (host + 2 guests), and no new joins once the game has started.
@@ -1747,13 +1862,17 @@
         hostWireConn(conn, role);
       });
       mp.peer.on('error', function(err){
-        btnCreateRoom.disabled = false;
+        if (mp.attempt !== attempt) return;
         if (err && err.type === 'unavailable-id'){
           // Code collision: silently retry with a fresh code.
+          clearTimeout(timer);
           try { mp.peer.destroy(); } catch (e) {}
           mp.peer = null; createRoom(); return;
         }
-        if (!opened) mpSetStatus(hostStatusEl, 'Gagal membuat room (' + (err && err.type ? err.type : 'jaringan') + '). Coba lagi.', true);
+        if (!opened){
+          clearTimeout(timer);
+          createRoomFailed('Gagal membuat room. Cek koneksi internet lalu coba lagi.');
+        }
       });
       mp.peer.on('disconnected', function(){ try { mp.peer.reconnect(); } catch (e) {} });
     }
@@ -1762,22 +1881,40 @@
       var code = (joinCodeEl.value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
       joinCodeEl.value = code;
       if (code.length !== 5){ mpSetStatus(guestStatusEl, 'Kode room harus 5 karakter (huruf + angka).', true); return; }
-      if (typeof Peer === 'undefined'){ mpSetError('PeerJS gagal dimuat — multiplayer tidak tersedia. Cek koneksi internet, atau main mode lokal dulu.'); return; }
+      if (typeof Peer === 'undefined'){ mpSetStatus(guestStatusEl, 'PeerJS gagal dimuat — multiplayer tidak tersedia. Cek koneksi internet, atau main mode solo dulu.', true); return; }
       mpCleanup(true);
       mp.mode = 'guest';
       mp.code = code;
+      var attempt = mp.attempt;
       btnJoinRoom.disabled = true;
       mpSetStatus(guestStatusEl, 'Menghubungkan ke room ' + code + '…');
       try { mp.peer = new Peer(); }
-      catch (e) { mpSetStatus(guestStatusEl, 'Gagal memulai koneksi.', true); btnJoinRoom.disabled = false; return; }
+      catch (e) { mpSetStatus(guestStatusEl, 'Gagal memulai koneksi. Cek koneksi internet lalu coba lagi.', true); btnJoinRoom.disabled = false; return; }
       var settled = false;
+      var timer = setTimeout(function(){
+        if (mp.attempt !== attempt || settled) return;
+        settled = true;
+        mpCleanup(true);
+        mpSetStatus(guestStatusEl, 'Gagal terhubung. Cek koneksi internet dan kode room, lalu coba lagi.', true);
+        btnJoinRoom.disabled = false;
+      }, 12000);
+      function joinFailed(msg){
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        mpCleanup(true);
+        mpSetStatus(guestStatusEl, msg, true);
+        btnJoinRoom.disabled = false;
+      }
       mp.peer.on('open', function(){
+        if (mp.attempt !== attempt) return;
         var conn = mp.peer.connect(MP_PREFIX + code.toLowerCase(), { reliable: true });
         mp.conn = conn;
         conn.on('open', function(){
+          if (mp.attempt !== attempt) return;
           settled = true;
+          clearTimeout(timer);
           btnJoinRoom.disabled = false;
-          mpSetStatus(guestStatusEl, '');
           showLobbyView();
           mpSetStatus(lobbyStatusEl, 'Terhubung ke room! Menunggu host menekan MULAI MASAK…');
         });
@@ -1792,27 +1929,37 @@
           else if (data.t === 'snap') applySnapshot(data);
           else if (data.t === 'dc') mpDisconnected(data.msg || 'Koneksi terputus. Game dijeda.');
         });
-        conn.on('close', function(){ mpDisconnected('Koneksi ke host terputus. Game dijeda.'); });
-        conn.on('error', function(){ mpDisconnected('Koneksi ke host bermasalah. Game dijeda.'); });
+        conn.on('close', function(){
+          if (!settled){ joinFailed('Gagal terhubung ke room itu. Pastikan host sudah membuat room, lalu coba lagi.'); return; }
+          mpDisconnected('Koneksi ke host terputus. Game dijeda.');
+        });
+        conn.on('error', function(){
+          if (!settled){ joinFailed('Gagal terhubung ke room itu. Pastikan host sudah membuat room, lalu coba lagi.'); return; }
+          mpDisconnected('Koneksi ke host bermasalah. Game dijeda.');
+        });
       });
       mp.peer.on('error', function(err){
-        btnJoinRoom.disabled = false;
-        if (settled) return;
+        if (mp.attempt !== attempt || settled) return;
         if (err && err.type === 'peer-unavailable')
-          mpSetStatus(guestStatusEl, 'Kode room tidak ditemukan. Cek lagi kodenya — pastikan host sudah membuat room.', true);
+          joinFailed('Kode room tidak ditemukan. Cek lagi kodenya — pastikan host sudah membuat room.');
+        else if (err && (err.type === 'network' || err.type === 'server-error' || err.type === 'socket-error' || err.type === 'socket-closed'))
+          joinFailed('Gagal terhubung. Cek koneksi internet lalu coba lagi.');
         else
-          mpSetStatus(guestStatusEl, 'Gagal terhubung (' + (err && err.type ? err.type : 'jaringan') + '). Coba lagi.', true);
+          joinFailed('Gagal terhubung (' + (err && err.type ? err.type : 'jaringan') + '). Coba lagi.');
       });
     }
     btnCreateRoom.addEventListener('click', createRoom);
     btnJoinRoom.addEventListener('click', joinRoom);
+    document.getElementById('btnGoJoin').addEventListener('click', function(){ sfx('click'); showJoinView(); });
+    document.getElementById('btnJoinBack').addEventListener('click', function(){ sfx('click'); mpCleanup(true); btnJoinRoom.disabled = false; showGateView(); });
+    btnLobbyRetry.addEventListener('click', createRoom);
     joinCodeEl.addEventListener('keydown', function(e){ if (e.key === 'Enter') joinRoom(); e.stopPropagation(); });
     joinCodeEl.addEventListener('keyup', function(e){ e.stopPropagation(); });
     btnLobbyStart.addEventListener('click', function(){
       if (mp.mode !== 'host' || openGuestCount() < 1) return;
       hostBroadcastStart();
     });
-    document.getElementById('btnLobbyLeave').addEventListener('click', function(){ mpCleanup(true); showEntryView(); });
+    document.getElementById('btnLobbyLeave').addEventListener('click', function(){ mpCleanup(true); showGateView(); });
     document.getElementById('btnMpBack').addEventListener('click', function(){ mpCleanup(true); showMenu(); });
 
     /* -------- Host snapshot broadcast / guest apply -------- */
