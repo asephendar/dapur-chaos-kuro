@@ -52,7 +52,7 @@
         background:#2b1c12;
         flex:none;
       }
-      canvas{ display:block; width:100%; height:100%; }
+      canvas{ display:block; width:100%; height:100%; touch-action:none; }
       .overlay{
         position:absolute; inset:0;
         display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
@@ -237,7 +237,14 @@
       }
       #btnTouchInteract{ width:86px; height:86px; font-size:13px; background:rgba(214,69,65,.82); }
       #btnTouchDash{ width:62px; height:62px; font-size:12px; background:rgba(91,127,166,.82); }
+      #btnTouchSwap{ width:62px; height:62px; font-size:11px; background:rgba(47,158,79,.85); }
       .tbtn:active{ filter:brightness(1.25); }
+      /* Phone landscape: whole stage (kitchen + touch controls) fits without page scroll */
+      @media (pointer: coarse) and (orientation: landscape){
+        body{ padding:6px 6px 8px; }
+        .stage{ width:min(1180px, 98vw, 165vh); }
+        .legend{ display:none; }
+      }
       /* Lobby player list + in-game player chips (Kuro Adventure style) */
       .player-rows{ width:100%; max-width:440px; margin:10px auto 2px; display:flex; flex-direction:column; gap:8px; }
       .player-row{ display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.05); border:2px solid rgba(245,197,66,.4); border-radius:10px; padding:9px 14px; font-size:15px; font-weight:700; text-align:left; }
@@ -276,6 +283,7 @@
         <div id="joyBase"><div id="joyStick"></div></div>
         <div class="touch-btns">
           <button class="tbtn" id="btnTouchDash" type="button">DASH</button>
+          <button class="tbtn" id="btnTouchSwap" type="button">GANTI<br/>KOKI</button>
           <button class="tbtn" id="btnTouchInteract" type="button">AMBIL /<br/>TARUH</button>
         </div>
       </div>
@@ -299,6 +307,7 @@
           <button class="btn" id="btnStart" type="button">MAIN SOLO</button>
           <button class="btn secondary" id="btnOnline" type="button">MULTIPLAYER ONLINE</button>
           <button class="btn secondary" id="btnHow" type="button">CARA MAIN</button>
+          <button class="btn secondary small" id="btnTouchToggle" type="button" style="margin-top:12px;">KONTROL SENTUH: OTOMATIS</button>
           <div class="credit">Level 150 detik &middot; kejar 800 poin untuk 3 bintang!<br/>Dapur Chaos Kuro &mdash; dimasak dengan kode, tanpa aset jiplakan.</div>
         </div>
       </div>
@@ -316,6 +325,14 @@
               Dash: <span class="keys">Shift</span><br/>
               Ganti koki (solo): <span class="keys">Tab</span> / <span class="keys">C</span><br/>
               Jeda: <span class="keys">P</span> / <span class="keys">Esc</span>
+            </div>
+            <div class="ctl-card">
+              <b>KONTROL SENTUH</b> (HP / tablet)<br/>
+              Joystick kiri bawah: gerak koki<br/>
+              <span class="keys">AMBIL / TARUH</span>: interaksi &mdash; tahan untuk memotong &amp; mencuci<br/>
+              <span class="keys">DASH</span>: lari cepat<br/>
+              <span class="keys">GANTI KOKI</span> (solo): tukar koki yang dikendalikan<br/>
+              Tombol &#10074;&#10074; pojok kanan atas: jeda
             </div>
           </div>
           <p style="margin-top:10px;"><b>SOLO:</b> dapurnya versi kompak &mdash; lebih kecil dan simple, semua stasiun berdekatan. Kamu mengendalikan satu koki (bertanda KAMU); koki satunya jadi partner yang diam menunggu — tekan <span class="keys">Tab</span>/<span class="keys">C</span> untuk bertukar kendali kapan saja. <b>MULTIPLAYER ONLINE:</b> dapur besar untuk maksimal 3 pemain (host = Raka, tamu = Gora &amp; Mika), tiap pemain memakai kontrol utama di perangkatnya sendiri; jeda berlaku bersama untuk semua pemain. Di HP: joystick + tombol, jeda lewat tombol &#10074;&#10074; di pojok layar.</p>
@@ -453,7 +470,7 @@
     <div class="legend">
       <div class="card">
         <h3><span class="dot" style="background:#e0492f;"></span>Raka</h3>
-        Gerak <span class="k">W</span><span class="k">A</span><span class="k">S</span><span class="k">D</span> &middot; Interaksi <span class="k">E</span> (tahan untuk memotong &amp; mencuci) &middot; Dash <span class="k">Shift</span>
+        Gerak <span class="k">W</span><span class="k">A</span><span class="k">S</span><span class="k">D</span> &middot; Interaksi <span class="k">E</span> (tahan untuk memotong &amp; mencuci) &middot; Dash <span class="k">Shift</span><br/>Di HP: joystick buat gerak, tombol AMBIL/TARUH (tahan = potong &amp; cuci), DASH, dan GANTI KOKI buat tukar koki pas solo.
       </div>
       <div class="card">
         <h3><span class="dot" style="background:#2470c2;"></span>Gora &amp; <span class="dot" style="background:#2f9e4f;"></span>Mika</h3>
@@ -2047,15 +2064,52 @@
       }
     }
 
-    /* ---------------- Touch controls ---------------- */
-    var isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+    /* ---------------- Touch controls ----------------
+       Detection is layered so the on-screen controls appear on real phones
+       even inside webviews/iframes where any single probe can lie:
+       (pointer: coarse) media query OR ontouchstart OR maxTouchPoints OR
+       the first real touch seen this session. The title-screen toggle
+       (KONTROL SENTUH: OTOMATIS / AKTIF / MATI) overrides all of it. */
+    var isTouch = false, touchSeen = false, touchForced = null;
+    var coarseMQ = window.matchMedia ? window.matchMedia('(pointer: coarse)') : null;
     var touchEl = document.getElementById('touchControls');
     var pauseBtnEl = document.getElementById('btnPauseTouch');
+    var btnSwapEl = document.getElementById('btnTouchSwap');
+    var touchToggleEl = document.getElementById('btnTouchToggle');
     function updateTouchVisibility(){
       var inGame = state === 'playing' || state === 'countdown';
       touchEl.classList.toggle('on', isTouch && inGame);
       pauseBtnEl.classList.toggle('on', isTouch && inGame);
+      if (btnSwapEl) btnSwapEl.style.display = (mp.mode === 'local') ? '' : 'none';
     }
+    function updateToggleLabel(){
+      if (!touchToggleEl) return;
+      touchToggleEl.textContent = 'KONTROL SENTUH: ' + (touchForced === null ? 'OTOMATIS' : (touchForced ? 'AKTIF' : 'MATI'));
+    }
+    function refreshTouchMode(){
+      var auto = touchSeen || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || !!(coarseMQ && coarseMQ.matches);
+      isTouch = (touchForced === null) ? auto : touchForced;
+      updateToggleLabel();
+      updateTouchVisibility();
+      if (typeof rotateEl !== 'undefined' && rotateEl) checkOrientation();
+    }
+    window.addEventListener('pointerdown', function(e){
+      if ((e.pointerType === 'touch' || e.pointerType === 'pen') && !touchSeen){ touchSeen = true; refreshTouchMode(); }
+    }, true);
+    window.addEventListener('touchstart', function(){
+      if (!touchSeen){ touchSeen = true; refreshTouchMode(); }
+    }, { capture: true, passive: true });
+    if (coarseMQ && coarseMQ.addEventListener) coarseMQ.addEventListener('change', refreshTouchMode);
+    if (touchToggleEl) touchToggleEl.addEventListener('click', function(){
+      initAudio();
+      touchForced = (touchForced === null) ? true : (touchForced ? false : null);
+      refreshTouchMode();
+    });
+    // While a level runs, page scroll/zoom gestures must not steal the game.
+    document.addEventListener('touchmove', function(e){
+      if (state === 'playing' || state === 'countdown') e.preventDefault();
+    }, { passive: false });
+
     var joyBase = document.getElementById('joyBase'), joyStick = document.getElementById('joyStick');
     var joyId = null;
     function joyMove(e){
@@ -2068,7 +2122,7 @@
       joyStick.style.transform = 'translate(calc(-50% + ' + dx + 'px), calc(-50% + ' + dy + 'px))';
       joyVec.x = dx / max; joyVec.y = dy / max;
     }
-    joyBase.addEventListener('pointerdown', function(e){ joyId = e.pointerId; joyBase.setPointerCapture(e.pointerId); joyMove(e); });
+    joyBase.addEventListener('pointerdown', function(e){ e.preventDefault(); joyId = e.pointerId; try { joyBase.setPointerCapture(e.pointerId); } catch (err) {} joyMove(e); });
     joyBase.addEventListener('pointermove', function(e){ if (e.pointerId === joyId) joyMove(e); });
     function joyEnd(e){
       if (e.pointerId !== joyId) return;
@@ -2077,13 +2131,28 @@
     }
     joyBase.addEventListener('pointerup', joyEnd);
     joyBase.addEventListener('pointercancel', joyEnd);
+    /* Hold-buttons with pointer capture: joystick and buttons stay usable at
+       the same time (one pointer per control), releasing always resets. */
+    function bindHoldButton(el, down, up){
+      el.addEventListener('pointerdown', function(e){
+        e.preventDefault();
+        try { el.setPointerCapture(e.pointerId); } catch (err) {}
+        initAudio(); down();
+      });
+      el.addEventListener('pointerup', up);
+      el.addEventListener('pointercancel', up);
+      el.addEventListener('pointerleave', up);
+      el.addEventListener('lostpointercapture', up);
+    }
     var btnI = document.getElementById('btnTouchInteract');
-    btnI.addEventListener('pointerdown', function(e){ e.preventDefault(); touchInteract = true; initAudio(); });
-    btnI.addEventListener('pointerup', function(){ touchInteract = false; });
-    btnI.addEventListener('pointerleave', function(){ touchInteract = false; });
-    btnI.addEventListener('pointercancel', function(){ touchInteract = false; });
+    bindHoldButton(btnI, function(){ touchInteract = true; }, function(){ touchInteract = false; });
     var btnD = document.getElementById('btnTouchDash');
     btnD.addEventListener('pointerdown', function(e){ e.preventDefault(); touchDashEdge = true; initAudio(); });
+    if (btnSwapEl) btnSwapEl.addEventListener('pointerdown', function(e){
+      e.preventDefault(); initAudio();
+      if (state === 'playing' || state === 'countdown') switchChef();
+    });
+    refreshTouchMode();
 
     /* ---------------- Rotate hint ---------------- */
     var rotateEl = document.getElementById('rotateHint');
