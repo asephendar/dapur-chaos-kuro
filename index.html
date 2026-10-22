@@ -307,7 +307,6 @@
           <button class="btn" id="btnStart" type="button">MAIN SOLO</button>
           <button class="btn secondary" id="btnOnline" type="button">MULTIPLAYER ONLINE</button>
           <button class="btn secondary" id="btnHow" type="button">CARA MAIN</button>
-          <button class="btn secondary small" id="btnTouchToggle" type="button" style="margin-top:12px;">KONTROL SENTUH: OTOMATIS</button>
           <div class="credit">Level 150 detik &middot; kejar 800 poin untuk 3 bintang!<br/>Dapur Chaos Kuro &mdash; dimasak dengan kode, tanpa aset jiplakan.</div>
         </div>
       </div>
@@ -2068,28 +2067,21 @@
        Detection is layered so the on-screen controls appear on real phones
        even inside webviews/iframes where any single probe can lie:
        (pointer: coarse) media query OR ontouchstart OR maxTouchPoints OR
-       the first real touch seen this session. The title-screen toggle
-       (KONTROL SENTUH: OTOMATIS / AKTIF / MATI) overrides all of it. */
-    var isTouch = false, touchSeen = false, touchForced = null;
+       the first real touch seen this session. Fully automatic — there is
+       no manual toggle; touch controls simply show on touch devices. */
+    var isTouch = false, touchSeen = false;
     var coarseMQ = window.matchMedia ? window.matchMedia('(pointer: coarse)') : null;
     var touchEl = document.getElementById('touchControls');
     var pauseBtnEl = document.getElementById('btnPauseTouch');
     var btnSwapEl = document.getElementById('btnTouchSwap');
-    var touchToggleEl = document.getElementById('btnTouchToggle');
     function updateTouchVisibility(){
       var inGame = state === 'playing' || state === 'countdown';
       touchEl.classList.toggle('on', isTouch && inGame);
       pauseBtnEl.classList.toggle('on', isTouch && inGame);
       if (btnSwapEl) btnSwapEl.style.display = (mp.mode === 'local') ? '' : 'none';
     }
-    function updateToggleLabel(){
-      if (!touchToggleEl) return;
-      touchToggleEl.textContent = 'KONTROL SENTUH: ' + (touchForced === null ? 'OTOMATIS' : (touchForced ? 'AKTIF' : 'MATI'));
-    }
     function refreshTouchMode(){
-      var auto = touchSeen || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || !!(coarseMQ && coarseMQ.matches);
-      isTouch = (touchForced === null) ? auto : touchForced;
-      updateToggleLabel();
+      isTouch = touchSeen || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || !!(coarseMQ && coarseMQ.matches);
       updateTouchVisibility();
       if (typeof rotateEl !== 'undefined' && rotateEl) checkOrientation();
     }
@@ -2100,11 +2092,6 @@
       if (!touchSeen){ touchSeen = true; refreshTouchMode(); }
     }, { capture: true, passive: true });
     if (coarseMQ && coarseMQ.addEventListener) coarseMQ.addEventListener('change', refreshTouchMode);
-    if (touchToggleEl) touchToggleEl.addEventListener('click', function(){
-      initAudio();
-      touchForced = (touchForced === null) ? true : (touchForced ? false : null);
-      refreshTouchMode();
-    });
     // While a level runs, page scroll/zoom gestures must not steal the game.
     document.addEventListener('touchmove', function(e){
       if (state === 'playing' || state === 'countdown') e.preventDefault();
